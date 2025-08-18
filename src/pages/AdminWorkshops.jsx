@@ -13,7 +13,8 @@ const AdminWorkshops = () => {
   useEffect(() => {
     const fetchWorkshops = async () => {
       try {
-        const response = await fetch('/api/admin/workshops', {
+        const API_URL = import.meta.env.VITE_API_URL;
+        const response = await fetch(`${API_URL}/admin/workshops`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -21,7 +22,6 @@ const AdminWorkshops = () => {
         
         if (response.ok) {
           const workshopsData = await response.json();
-          // Ensure we have an array
           setWorkshops(workshopsData.data || []);
         } else {
           setError('Failed to fetch workshops');
@@ -42,7 +42,8 @@ const AdminWorkshops = () => {
   const deleteWorkshop = async (id) => {
     if (window.confirm('Are you sure you want to delete this workshop?')) {
       try {
-        const response = await fetch(`/api/admin/workshops/${id}`, {
+        const API_URL = import.meta.env.VITE_API_URL;
+        const response = await fetch(`${API_URL}/admin/workshops/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`

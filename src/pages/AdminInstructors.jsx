@@ -13,7 +13,8 @@ const AdminInstructors = () => {
   useEffect(() => {
     const fetchInstructors = async () => {
       try {
-        const response = await fetch('/api/admin/instructors', {
+        const API_URL = import.meta.env.VITE_API_URL;
+        const response = await fetch(`${API_URL}/admin/instructors`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -21,7 +22,6 @@ const AdminInstructors = () => {
         
         if (response.ok) {
           const instructorsData = await response.json();
-          // Ensure we have an array
           setInstructors(instructorsData.data || []);
         }
       } catch (err) {
@@ -40,7 +40,8 @@ const AdminInstructors = () => {
   const deleteInstructor = async (id) => {
     if (window.confirm('Are you sure you want to delete this instructor?')) {
       try {
-        const response = await fetch(`/api/admin/instructors/${id}`, {
+        const API_URL = import.meta.env.VITE_API_URL;
+        const response = await fetch(`${API_URL}/admin/instructors/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
