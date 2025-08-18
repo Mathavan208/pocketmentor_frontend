@@ -280,7 +280,7 @@ const Home = () => {
       </section>
       
       {/* Footer */}
-      <Footer />
+     
     </div>
   );
 };
