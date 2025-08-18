@@ -1,6 +1,6 @@
 // App.jsx
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route,HashRouter } from 'react-router-dom';
 import { UserProvider } from './context/UserContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -27,7 +27,7 @@ import AdminRoute from './components/AdminRoute';
 function App() {
   return (
     <UserProvider>
-      <Router>
+      <HashRouter>
         <div className="flex flex-col min-h-screen">
           <Header />
           <main className="flex-grow">
@@ -87,7 +87,7 @@ function App() {
           </main>
           <Footer />
         </div>
-      </Router>
+      </HashRouter>
     </UserProvider>
   );
 }
