@@ -163,7 +163,208 @@ const AdminInstructors = () => {
     </div>
   );
 };
-
-// AdminInstructorForm component remains the same
+const AdminInstructorForm = ({ instructor, onClose, onSave }) => {
+  const [name, setName] = useState(instructor ? instructor.name : '');
+  const [profession, setProfession] = useState(instructor ? instructor.profession : '');
+  const [image, setImage] = useState(instructor ? instructor.image : '');
+  const [bio, setBio] = useState(instructor ? instructor.bio : '');
+  const [social, setSocial] = useState(instructor ? instructor.social : { linkedin: '', github: '', twitter: '' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    
+    try {
+      const API_URL = import.meta.env.VITE_API_URL;
+      const instructorData = {
+        name,
+        profession,
+        image,
+        bio,
+        social
+      };
+      
+      const url = instructor ? `${API_URL}/admin/instructors/${instructor._id}` : `${API_URL}/admin/instructors`;
+      const method = instructor ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(instructorData),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to save instructor');
+      }
+      
+      const savedInstructor = await response.json();
+      onSave(savedInstructor);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const handleSocialChange = (platform, value) => {
+    setSocial({
+      ...social,
+      [platform]: value
+    });
+  };
+  
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+      <div className="w-full max-w-4xl max-h-screen overflow-y-auto bg-white shadow-xl rounded-xl">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-deep-blue">
+              {instructor ? 'Edit Instructor' : 'Create New Instructor'}
+            </h2>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          
+          {error && (
+            <div className="p-3 mb-4 text-red-700 bg-red-100 rounded-lg">
+              {error}
+            </div>
+          )}
+          
+          <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div>
+                <label className="block mb-2 text-gray-700" htmlFor="name">
+                  Name
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-deep-blue"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block mb-2 text-gray-700" htmlFor="profession">
+                  Profession
+                </label>
+                <input
+                  id="profession"
+                  type="text"
+                  value={profession}
+                  onChange={(e) => setProfession(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-deep-blue"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block mb-2 text-gray-700" htmlFor="image">
+                  Image URL
+                </label>
+                <input
+                  id="image"
+                  type="text"
+                  value={image}
+                  onChange={(e) => setImage(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-deep-blue"
+                  required
+                />
+              </div>
+              
+              <div className="md:col-span-2">
+                <label className="block mb-2 text-gray-700" htmlFor="bio">
+                  Bio
+                </label>
+                <textarea
+                  id="bio"
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  rows={4}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-deep-blue"
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block mb-2 text-gray-700" htmlFor="linkedin">
+                  LinkedIn Profile
+                </label>
+                <input
+                  id="linkedin"
+                  type="url"
+                  value={social.linkedin}
+                  onChange={(e) => handleSocialChange('linkedin', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-deep-blue"
+                  placeholder="https://linkedin.com/in/username"
+                />
+              </div>
+              
+              <div>
+                <label className="block mb-2 text-gray-700" htmlFor="github">
+                  GitHub Profile
+                </label>
+                <input
+                  id="github"
+                  type="url"
+                  value={social.github}
+                  onChange={(e) => handleSocialChange('github', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-deep-blue"
+                  placeholder="https://github.com/username"
+                />
+              </div>
+              
+              <div>
+                <label className="block mb-2 text-gray-700" htmlFor="twitter">
+                  Twitter Profile
+                </label>
+                <input
+                  id="twitter"
+                  type="url"
+                  value={social.twitter}
+                  onChange={(e) => handleSocialChange('twitter', e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-deep-blue"
+                  placeholder="https://twitter.com/username"
+                />
+              </div>
+            </div>
+            
+            <div className="flex justify-end mt-8 space-x-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-6 py-2 text-white rounded-lg bg-gradient-to-r from-deep-blue to-purple-blue hover:from-purple-blue hover:to-light-blue disabled:opacity-50"
+              >
+                {loading ? 'Saving...' : 'Save Instructor'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default AdminInstructors;
