@@ -36,18 +36,23 @@ const CourseCard = ({ course }) => {
     setError('');
     
     try {
-      // Create enrollment with pending status
-      const response1 = await fetch('/api/admin/enrollments', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        for(let i=0;i<response1.length;i++){
-          if(response1[i].course==course._id){
-            setError( 'Already enrolled in course');
-          }
+      const API_URL = import.meta.env.VITE_API_URL;
+      // Check if already enrolled
+      const response1 = await fetch(`${API_URL}/admin/enrollments`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-      const response = await fetch(`/api/courses/${course._id}/enroll`, {
+      });
+      const enrollments = await response1.json();
+      for (let i = 0; i < enrollments.length; i++) {
+        if (enrollments[i].course === course._id) {
+          setError('Already enrolled in course');
+          setEnrolling(false);
+          return;
+        }
+      }
+      // Create enrollment with pending status
+      const response = await fetch(`${API_URL}/courses/${course._id}/enroll`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

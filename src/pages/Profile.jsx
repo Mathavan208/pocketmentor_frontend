@@ -28,7 +28,8 @@ const Profile = () => {
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
-        const profileResponse = await fetch('/api/users/profile', {
+        const API_URL = import.meta.env.VITE_API_URL;
+        const profileResponse = await fetch(`${API_URL}/users/profile`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -48,7 +49,7 @@ const Profile = () => {
           });
           
           // Fetch user's enrollments
-          const enrollmentResponse = await fetch('/api/users/enrollments', {
+          const enrollmentResponse = await fetch(`${API_URL}/users/enrollments`, {
             headers: {
               'Authorization': `Bearer ${token}`
             }
@@ -73,7 +74,8 @@ const Profile = () => {
 
   const fetchCourseMaterials = async (courseId, day) => {
     try {
-      const response = await fetch(`/api/courses/${courseId}/materials/${day}`, {
+      const API_URL = import.meta.env.VITE_API_URL;
+      const response = await fetch(`${API_URL}/courses/${courseId}/materials/${day}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -115,7 +117,8 @@ const Profile = () => {
     }
     
     try {
-      const response = await fetch('/api/users/profile', {
+      const API_URL = import.meta.env.VITE_API_URL;
+      const response = await fetch(`${API_URL}/users/profile`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -166,7 +169,8 @@ const Profile = () => {
     }
     
     try {
-      const response = await fetch('/api/users/password', {
+      const API_URL = import.meta.env.VITE_API_URL;
+      const response = await fetch(`${API_URL}/users/password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

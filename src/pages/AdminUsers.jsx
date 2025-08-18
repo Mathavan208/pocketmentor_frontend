@@ -11,7 +11,8 @@ const AdminUsers = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch('/api/admin/users', {
+        const API_URL = import.meta.env.VITE_API_URL;
+        const response = await fetch(`${API_URL}/admin/users`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -19,7 +20,6 @@ const AdminUsers = () => {
         
         if (response.ok) {
           const data = await response.json();
-          // Handle the response structure - it might be { success: true, data: [...] }
           setUsers(data.data || []);
         } else {
           setError('Failed to fetch users');
@@ -39,7 +39,8 @@ const AdminUsers = () => {
   
   const updateUserRole = async (userId, newRole) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}/role`, {
+      const API_URL = import.meta.env.VITE_API_URL;
+      const response = await fetch(`${API_URL}/admin/users/${userId}/role`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -63,7 +64,8 @@ const AdminUsers = () => {
   
   const toggleUserStatus = async (userId, isActive) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}/status`, {
+      const API_URL = import.meta.env.VITE_API_URL;
+      const response = await fetch(`${API_URL}/admin/users/${userId}/status`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

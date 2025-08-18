@@ -20,7 +20,8 @@ const AdminEnrollments = () => {
     const fetchEnrollments = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('/api/admin/enrollments', {
+        const API_URL = import.meta.env.VITE_API_URL;
+        const response = await fetch(`${API_URL}/admin/enrollments`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -54,7 +55,8 @@ const AdminEnrollments = () => {
   const fetchCourseDetails = async (courseId, enrollment) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/courses/${courseId}`, {
+      const API_URL = import.meta.env.VITE_API_URL;
+      const response = await fetch(`${API_URL}/courses/${courseId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -103,7 +105,8 @@ const AdminEnrollments = () => {
   const updatePaymentStatus = async (enrollmentId, status) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/admin/enrollments/${enrollmentId}/payment-status`, {
+      const API_URL = import.meta.env.VITE_API_URL;
+      const response = await fetch(`${API_URL}/admin/enrollments/${enrollmentId}/payment-status`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -127,7 +130,8 @@ const AdminEnrollments = () => {
   const updateDayProgress = async (enrollmentId, dayNumber, completed) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/admin/enrollments/${enrollmentId}/progress`, {
+      const API_URL = import.meta.env.VITE_API_URL;
+      const response = await fetch(`${API_URL}/admin/enrollments/${enrollmentId}/progress`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -167,7 +171,8 @@ const AdminEnrollments = () => {
     if (window.confirm('Are you sure you want to delete this enrollment? This action cannot be undone.')) {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`/api/admin/enrollments/${enrollmentId}`, {
+        const API_URL = import.meta.env.VITE_API_URL;
+        const response = await fetch(`${API_URL}/admin/enrollments/${enrollmentId}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -201,7 +206,8 @@ const AdminEnrollments = () => {
   const fetchCourseMaterials = async (courseId, day) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/courses/${courseId}/materials/${day}`, {
+      const API_URL = import.meta.env.VITE_API_URL;
+      const response = await fetch(`${API_URL}/courses/${courseId}/materials/${day}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -231,7 +237,8 @@ const AdminEnrollments = () => {
     
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`/api/admin/courses/${selectedEnrollment.course._id}/materials`, {
+      const API_URL = import.meta.env.VITE_API_URL;
+      const response = await fetch(`${API_URL}/admin/courses/${selectedEnrollment.course._id}/materials`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

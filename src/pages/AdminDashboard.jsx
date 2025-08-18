@@ -19,7 +19,8 @@ const AdminDashboard = () => {
     }
     const fetchDashboardData = async () => {
       try {
-        const statsResponse = await fetch('/api/admin/dashboard', {
+         const API_URL = import.meta.env.VITE_API_URL;
+        const statsResponse = await fetch(`${API_URL}/admin/dashboard`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -30,7 +31,7 @@ const AdminDashboard = () => {
           setStats(statsData.data || {});
         }
         
-        const usersResponse = await fetch('/api/admin/users', {
+        const usersResponse = await fetch(`${API_URL}/admin/users`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -41,7 +42,7 @@ const AdminDashboard = () => {
           setUsers(usersData.data || []);
         }
         
-        const paymentsResponse = await fetch('/api/admin/payments', {
+        const paymentsResponse = await fetch(`${API_URL}/admin/payments`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -52,7 +53,7 @@ const AdminDashboard = () => {
           setPayments(paymentsData.data || []);
         }
         
-        const enrollmentsResponse = await fetch('/api/admin/enrollments', {
+        const enrollmentsResponse = await fetch(`${API_URL}/admin/enrollments`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -76,7 +77,8 @@ const AdminDashboard = () => {
 
   const updateUserRole = async (userId, newRole) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}/role`, {
+      const API_URL = import.meta.env.VITE_API_URL;
+      const response = await fetch(`${API_URL}/admin/users/${userId}/role`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
