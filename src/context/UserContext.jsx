@@ -19,7 +19,7 @@ export const UserProvider = ({ children }) => {
 
   const fetchUserInfo = async () => {
     try {
-      const response = await fetch('/api/users/profile', {
+      const response = await fetch('/users/profile', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -42,7 +42,7 @@ export const UserProvider = ({ children }) => {
   };
 
   const login = async (email, password) => {
-    const response = await fetch('/api/users/login', {
+    const response = await fetch('/users/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -62,7 +62,7 @@ export const UserProvider = ({ children }) => {
   };
 
   const register = async (name, email, password) => {
-    const response = await fetch('/api/users/register', {
+    const response = await fetch('/users/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
