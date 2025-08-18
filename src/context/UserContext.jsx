@@ -44,7 +44,7 @@ export const UserProvider = ({ children }) => {
   // UserContext.js
 const login = async (email, password) => {
   const API_URL = import.meta.env.VITE_API_URL;
-  const response = await fetch(`${API_URL}/api/users/login`, {
+  const response = await fetch(`${API_URL}/users/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
