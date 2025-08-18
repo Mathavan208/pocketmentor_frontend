@@ -2,6 +2,7 @@ import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserContext } from '../context/UserContext';
 import { FaUser, FaLock, FaEnvelope } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 
 const Register = () => {
   const [name, setName] = useState('');
