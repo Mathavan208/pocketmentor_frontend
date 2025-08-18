@@ -1,0 +1,78 @@
+[
+  {
+    "id": 1,
+    "name": "Mathavan",
+    "profession": "Developer",
+   
+    "image": "https://i.postimg.cc/V62XqBsv/mathavan2.jpg",
+    "social": {
+      "linkedin": "https://www.linkedin.com/in/mathavan-s-01716b249",
+      
+      "github": "https://i.postimg.cc/YC1KHhC6/profile.jpg"
+    }
+  },
+  {
+    "id": 2,
+    "name": "Mukhilan",
+    "profession": "Developer-TCS",
+    
+    "image": "https://i.postimg.cc/rFHFm0T7/mukhil.jpg",
+    "social": {
+      "linkedin": "http://www.linkedin.com/in/mukhilanss",
+     
+      "github": "https://github.com/sarahwilliams"
+    }
+  },
+  {
+    "id": 3,
+    "name": "Jayasuriya",
+    "profession": "Developer",
+    
+    "image": "https://i.postimg.cc/pdcpDGMX/jayasuriya.jpg",
+    "social": {
+      "linkedin": "http://www.linkedin.com/in/jayasuriya-r-6b6805258",
+     
+      "github": "https://github.com/michaelchen"
+    }
+  }
+  
+  ,
+  {
+    "id": 5,
+    "name": "Siva sankar",
+    "profession": "Developer-INFOSYS",
+   
+    "image": "https://i.postimg.cc/PrTFw2Xw/siva.jpg",
+    "social": {
+      "linkedin": "https://www.linkedin.com/in/sivashankar-s-33117b249/",
+      
+      "github": "https://github.com/davidkim"
+    }
+  },
+  {
+    "id": 5,
+    "name": "Mohana Prasadh",
+    "profession": "Developer",
+   
+    "image": "https://i.postimg.cc/Vk115jTG/mohan.jpg",
+    "social": {
+      "linkedin": "https://www.linkedin.com/in/mohana-prasath-23b733227/",
+      
+      "github": "https://github.com/davidkim"
+    }
+  },
+  {
+    "id": 6,
+    "name": "Nikhil",
+    "profession": "Business analyst-photon",
+   
+    "image": "https://i.ibb.co/4ZCvN04W/NIKHIL.jpg",
+    "social": {
+      "linkedin": "https://www.linkedin.com/in/nikhil-prakash-635063260?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app",
+      
+      "github": "https://github.com/davidkim"
+    }
+  }
+  
+]
+

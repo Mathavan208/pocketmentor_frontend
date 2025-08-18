@@ -1,0 +1,186 @@
+[
+  {
+    "id": 1,
+    "title": "SQL WORKSHOP FOR PLACEMENT",
+    "description": "Learn the core concepts of SQL and solving placement related questions",
+    "status": "available",
+    "image": "https://i.ibb.co/R4HcLjgm/SQL2.png",
+    "level": "Beginner",
+    "prerequisites": "Basic computer knowledge",
+    "topics": [
+      "Introduction to SQL",
+      "Database Concepts",
+      "SELECT Statements",
+      "Filtering and Sorting Data",
+      "Joins and Relationships",
+      "Solving placement questions"
+    ],
+    "schedule": [
+      {
+        "title": "Introduction to SQL",
+        "duration": "15 min",
+        "description": "What is SQL and why is it important?"
+      },
+      {
+        "title": "Basic Queries",
+        "duration": "30 min",
+        "description": "Hands-on practice with SELECT statements"
+      },
+      {
+        "title": "Filtering and Sorting",
+        "duration": "35 min",
+        "description": "Using WHERE, ORDER BY, and LIMIT"
+      },
+      {
+        "title": "Joins and Relationships",
+        "duration": "15 min",
+        "description": "Combining data from multiple tables"
+      },
+      {
+        "title": "Placement questions for sql",
+        "duration": "30 min",
+        "description": "Solving frequent questions in campus placements"
+      }
+    ],
+    "registrationLink": "https://docs.google.com/forms/d/e/1FAIpQLSfwLvd6aEa6w9i0IvXTQFHmK0ExKF9I_lZcnigOvL8jORcxTA/viewform?usp=dialog"
+  },
+  {
+    "id": 2,
+    "title": "JAVASCRIPT WORKSHOP FOR PLACEMENT",
+    "description": "Master the fundamentals of JavaScript",
+    "status": "available",
+    "image": "https://i.ibb.co/kspD9mdr/Java-Script-Symbol.png",
+    "level": "Beginner",
+    "prerequisites": "Basic HTML knowledge",
+    "topics": [
+      "JavaScript Basics",
+      "Variables and Data Types",
+      "Functions",
+      "Control Structures",
+      "DOM Manipulation"
+    ],
+    "schedule": [
+      {
+        "title": "Introduction to JavaScript",
+        "duration": "2 hrs",
+        "description": "Core concepts in javascript and solving placement related questions"
+      },
+      {
+        "title": "Variables and Data Types",
+        "duration": "30 min",
+        "description": "Understanding variables, types, and declarations"
+      },
+      {
+        "title": "Functions and Control Flow",
+        "duration": "35 min",
+        "description": "Writing functions, if/else, and loops"
+      },
+      {
+        "title": "DOM Manipulation",
+        "duration": "15 min",
+        "description": "Interacting with web pages using JavaScript"
+      },
+      {
+        "title": "Placement questions for javascript",
+        "duration": "30 min",
+        "description": "Solving frequent questions in campus placements"
+      }
+    ],
+    "registrationLink": "https://docs.google.com/forms/d/e/1FAIpQLSf_sL3I4crV8PFx2R6JDhToo3WkfLiaYfK1b7sohADd12I6FA/viewform?usp=dialog"
+  },
+  {
+    "id": 3,
+    "title": "GSAP WORKSHOP",
+    "description": "Learn GSAP animation for modern web development.",
+    "status": "upcoming",
+    "image": "https://i.ibb.co/rGWztPHL/gsap.png",
+    "level": "Beginner",
+    "prerequisites": "Basic JavaScript knowledge",
+    "topics": [
+      "Introduction to GSAP",
+      "Core Animation Concepts",
+      "Tween and Timeline",
+      "Practical Animation Examples"
+    ],
+    "schedule": [
+      {
+        "title": "Introduction to GSAP",
+        "duration": "20 min",
+        "description": "Overview of GSAP and its capabilities"
+      },
+      {
+        "title": "Tween and Timeline",
+        "duration": "40 min",
+        "description": "Creating basic and advanced animations"
+      },
+      {
+        "title": "Practical Animation Examples",
+        "duration": "30 min",
+        "description": "Hands-on with real-world animation scenarios"
+      }
+    ],
+    "registrationLink": "https://docs.google.com/forms/d/e/1FAIpQLSfwLvd6aEa6w9i0IvXTQFHmK0ExKF9I_lZcnigOvL8jORcxTA/viewform?usp=dialog"
+  },
+  {
+    "id": 4,
+    "title": "Career Kootam – Workshop",
+    "description": "A comprehensive workshop covering placement pathways, business fundamentals, business analyst insights, automation & testing, work-life insights, career skills, networking, and salary understanding.",
+    "status": "available",
+    "image": "https://i.ibb.co/9k4569G1/career.webp",
+    "level": "Beginner",
+    "prerequisites": "None",
+    "topics": [
+      "Campus vs Off-Campus Placements",
+      "Business and Its Types",
+      "Business Analyst Roles",
+      "Automation & Testing in Workflow",
+      "Night Shifts & Career Choices",
+      "Sales vs Development Roles",
+      "LinkedIn & Cold Mailing",
+      "Understanding PF and Salary Structure"
+    ],
+    "schedule": [
+      {
+        "title": "Placement Pathways",
+        "duration": "30 min",
+        "description": "Campus vs Off-Campus Placements: Strategies for Success. Interactive poll/discussion."
+      },
+      {
+        "title": "Business Fundamentals",
+        "duration": "30 min",
+        "description": "What is Business and Its Types? Mini-group activity."
+      },
+      {
+        "title": "Business Analyst Insights",
+        "duration": "30 min",
+        "description": "Business Analyst Roles: Skills & Career Path. Hands-on example."
+      },
+      {
+        "title": "Automation & Testing in Workflow",
+        "duration": "30 min",
+        "description": "Automation and Testing: Enhancing Efficiency. Mini-demo."
+      },
+      {
+        "title": "Work-Life Insights",
+        "duration": "20 min",
+        "description": "Understanding Night Shifts & Career Choices. Experience sharing."
+      },
+      {
+        "title": "Career Skills & Roles",
+        "duration": "20 min",
+        "description": "What is Sales & How it Differs from Development Roles. Quick role-play."
+      },
+      {
+        "title": "Networking & Job Search",
+        "duration": "30 min",
+        "description": "LinkedIn & Cold Mailing for Career Opportunities. Hands-on demo."
+      },
+      {
+        "title": "Salary & Benefits Understanding",
+        "duration": "20 min",
+        "description": "Understanding PF and Your Salary Structure. Example calculation."
+      }
+    ],
+    "registrationLink": "https://docs.google.com/forms/d/e/1FAIpQLSd5G191aEdC2_V7ehLlodfUd8x6Ef09PV3FREJAY7GHK4pRyA/viewform?usp=dialog"
+  }
+]

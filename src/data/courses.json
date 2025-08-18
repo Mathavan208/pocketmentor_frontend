@@ -1,0 +1,302 @@
+[
+ {
+    "id": 1,
+    "title": "Java Programming",
+    "description": "Master Java programming language from basics to advanced concepts. Includes daily LeetCode and HackerRank assessments, solving LeetCode problems in class, and building a real-world project to showcase in your resume.",
+    "image": "https://images.unsplash.com/photo-1555066931-4365d14bab8c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80",
+    "syllabus": "This comprehensive Java course takes you from the basics of syntax to mastering advanced programming concepts. You’ll learn object-oriented programming, data structures, and algorithms to build efficient and maintainable applications. We also cover multithreading, exception handling, and advanced Java APIs. By the end, you’ll be able to design and develop robust, scalable software solutions.\n\nAdditional Learning:\n- Daily LeetCode and HackerRank assessments\n- Live LeetCode problem-solving sessions\n- Build a resume-ready Java project",
+    "status": "available",
+    "paymentLink": "https://rzp.io/rzp/izH8HroC",
+    "curriculum": [
+      {
+        "week": 1,
+        "topics": [
+          "Introduction to Java",
+          "Setting up Java Environment",
+          "Basic Syntax and Data Types",
+          "Variables and Operators",
+          "Control Statements (if, switch, loops)",
+          "Methods and Functions",
+          "Arrays and Strings",
+          "Mini Project - Basic Java Program"
+        ]
+      },
+      {
+        "week": 2,
+        "topics": [
+          "Object-Oriented Programming Concepts",
+          "Classes and Objects",
+          "Inheritance and Polymorphism",
+          "Abstraction and Encapsulation",
+          "Interfaces and Abstract Classes",
+          "Exception Handling",
+          "Collections Framework",
+          "Mini Project - Object-Oriented Application",
+          "Daily LeetCode & HackerRank Challenges",
+          "Resume Project Development"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 2,
+    "title": "SQL Database",
+    "description": "Learn SQL for database management and data manipulation. Includes daily LeetCode and HackerRank SQL challenges, solving queries together, and building a resume-ready database project.",
+    "image": "https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80",
+    "syllabus": "This SQL course focuses on managing and manipulating data in relational databases. You’ll learn how to design databases, write queries, and use joins, subqueries, and aggregate functions. We also cover indexing, optimization, and security practices for efficient database management. By course completion, you’ll be confident in working with real-world datasets and integrating SQL into applications.\n\nAdditional Learning:\n- Daily SQL LeetCode and HackerRank practice\n- Collaborative query-solving sessions\n- Build a database project for your resume",
+    "status": "available",
+    "paymentLink": "https://rzp.io/rzp/MUfeEAjY",
+    "curriculum": [
+      {
+        "week": 1,
+        "topics": [
+          "Introduction to Databases",
+          "Basic SELECT Queries",
+          "Filtering (WHERE, AND, OR)",
+          "Sorting & Limiting",
+          "Basic Joins",
+          "Aggregations (COUNT, SUM, AVG)",
+          "Grouping Data",
+          "Mini Project - Database for an App"
+        ]
+      },
+      {
+        "week": 2,
+        "topics": [
+          "Complex Joins",
+          "Subqueries",
+          "Views",
+          "Stored Procedures & Functions",
+          "Indexing & Optimization",
+          "Transactions",
+          "Advanced SQL Features",
+          "Mini Project - Advanced Database Application",
+          "Daily LeetCode & HackerRank SQL Challenges",
+          "Resume Database Project Development"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "title": "Python Programming",
+    "description": "Explore Python programming for data science, web development, and automation. Includes daily LeetCode and HackerRank assessments, solving coding problems in class, and building a resume-ready Python project.",
+    "image": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80",
+    "syllabus": "This Python course takes you from the basics of syntax to mastering advanced programming concepts. You’ll learn object-oriented programming, data structures, and libraries for data handling. We also cover APIs, error handling, and building scalable Python applications.\n\nAdditional Learning:\n- Daily Python LeetCode and HackerRank practice\n- Live problem-solving sessions\n- Build a Python project for your resume",
+    "status": "available",
+    "paymentLink": "https://rzp.io/rzp/4hzOtOO",
+    "curriculum": [
+      {
+        "week": 1,
+        "topics": [
+          "Python Fundamentals",
+          "Variables and Data Types",
+          "Operators and Expressions",
+          "Control Flow (if, elif, else)",
+          "Loops (for, while)",
+          "Functions",
+          "Data Structures (Lists, Tuples, Sets, Dictionaries)",
+          "Mini Project - Python Basics"
+        ]
+      },
+      {
+        "week": 2,
+        "topics": [
+          "Object-Oriented Programming in Python",
+          "Classes and Objects",
+          "Inheritance and Polymorphism",
+          "File Handling",
+          "Error and Exception Handling",
+          "Modules and Packages",
+          "Working with APIs",
+          "Mini Project - Python Application",
+          "Daily LeetCode & HackerRank Challenges",
+          "Resume Python Project Development"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "title": "JavaScript – 2-Week Fast-Track Program",
+    "description": "A high-impact JavaScript course designed to take you from basics to advanced concepts in just two weeks. Includes daily LeetCode and HackerRank challenges, solving JavaScript problems together, and building an interactive web app to showcase on your resume.",
+    "image": "https://images.unsplash.com/photo-1555066931-4365d14bab8c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1170&q=80",
+    "syllabus": "This intensive two-week JavaScript program covers everything from fundamental concepts to advanced techniques used in modern web applications. Week 1 focuses on core JavaScript, variables, functions, DOM manipulation, and event handling. Week 2 dives into ES6+ features, asynchronous programming, modules, storage APIs, and a final project.\n\nAdditional Learning:\n- Daily JavaScript LeetCode and HackerRank practice\n- Collaborative problem-solving sessions\n- Build a portfolio-ready interactive JavaScript app",
+    "status": "available",
+    "paymentLink": "https://rzp.io/rzp/enaMxbPl",
+    "curriculum": [
+      {
+        "week": 1,
+        "topics": [
+          "Variables & Data Types",
+          "Operators & Expressions",
+          "Functions",
+          "DOM Manipulation",
+          "Events",
+          "Arrays & Objects"
+        ]
+      },
+      {
+        "week": 2,
+        "topics": [
+          "ES6+ Features",
+          "Asynchronous JS (Callbacks, Promises, Async/Await)",
+          "Error Handling",
+          "Modules & Imports",
+          "Local Storage & Session Storage",
+          "Mini Project – Interactive Web App",
+          "Daily LeetCode & HackerRank Challenges",
+          "Resume JavaScript Project Development"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "title": "React.js",
+    "description": "Master in-demand skills with our expert-led React.js course, covering component-based architecture, state management, hooks, and advanced techniques for building modern, scalable web applications.",
+    "image": "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80",
+    "syllabus":  "React.js is one of the most popular JavaScript libraries for building interactive user interfaces. This course takes you from the fundamentals of components and JSX to advanced concepts like hooks, context API, and performance optimization. You’ll build multiple projects, learning how to create reusable components, manage complex application state, and integrate APIs for dynamic data.",
+    "status": "available",
+    "paymentLink": "https://rzp.io/rzp/Pcnd0Hz6",
+    "curriculum": [
+      {
+        "week": 1,
+        "topics": [
+          "Introduction to React & Setup",
+          "JSX & Components",
+          "Props & State",
+          "Event Handling",
+          "Conditional Rendering",
+          "Lists & Keys",
+          "Forms & Controlled Components",
+          "Mini Project - React Component Library"
+        ]
+      },
+      {
+        "week": 2,
+        "topics": [
+          "React Hooks (useState, useEffect)",
+          "Context API",
+          "React Router",
+          "API Integration (fetch, axios)",
+          "State Management with Redux",
+          "Performance Optimization",
+          "Testing React Applications",
+          "Mini Project - Single Page App"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "title": "Node.js",
+    "description": "Learn server-side JavaScript with Node.js for backend development.",
+    "image": "https://images.unsplash.com/photo-1555066931-4365d14bab8c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80",
+    "syllabus": "Our Node.js course enables you to build fast, scalable, server-side applications using JavaScript. You’ll learn to create REST APIs, manage authentication, and connect to databases like MongoDB and MySQL. We also cover deployment, security, and performance tuning for production-ready applications. This course prepares you to work on full-stack projects and enterprise-level backends.",
+    "status": "upcoming",
+    "launchDate": "Coming Soon",
+    "curriculum": [
+      {
+        "week": 1,
+        "topics": [
+          "Introduction to Node.js & Setup",
+          "Node.js Modules & NPM",
+          "File System Module",
+          "Event Loop & Asynchronous Programming",
+          "HTTP Module",
+          "Express.js Basics",
+          "Middleware and Routing",
+          "Mini Project - REST API Service"
+        ]
+      },
+      {
+        "week": 2,
+        "topics": [
+          "REST APIs with Express",
+          "Authentication (JWT)",
+          "Error Handling & Validation",
+          "MongoDB Integration",
+          "Deployment Basics",
+          "Real-time Applications with Socket.io",
+          "Testing Node.js Applications",
+          "Mini Project - Full Stack Application"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "title": "Tailwind CSS",
+    "description": "Master utility-first CSS framework for rapid UI development.",
+    "image": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80",
+    "syllabus": "This Tailwind CSS course introduces you to a utility-first approach for creating visually appealing, responsive designs quickly. You’ll learn to customize themes, apply responsive breakpoints, and create reusable components. Through hands-on projects, you’ll gain experience in building scalable, maintainable UI layouts. Perfect for developers who want both speed and flexibility in styling.",
+    "status": "upcoming",
+    "launchDate": "Coming Soon",
+    "curriculum": [
+      {
+        "week": 1,
+        "topics": [
+          "Tailwind Setup & Configuration",
+          "Utility-First CSS Philosophy",
+          "Colors, Spacing, Typography",
+          "Flexbox & Grid Layouts",
+          "Responsive Design",
+          "Hover & Focus States",
+          "Customizing Theme",
+          "Mini Project - Landing Page"
+        ]
+      },
+      {
+        "week": 2,
+        "topics": [
+          "Components & Reusable Styles",
+          "Dark Mode",
+          "Animations & Transitions",
+          "Forms Styling",
+          "Optimization Techniques",
+          "Building a Complete UI",
+          "Advanced Patterns",
+          "Mini Project - Web Application"
+        ]
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "title": "HR Communication",
+    "description": "Enhance professional communication skills for HR professionals.",
+    "image": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80",
+    "syllabus": "Strong communication skills are essential for success in any profession. This course covers effective verbal and written communication, active listening, and presentation techniques. You’ll learn how to express ideas clearly, engage an audience, and adapt your communication style to different situations. Through role-play and feedback, you’ll gain confidence in both professional and personal interactions.",
+    "status": "upcoming",
+    "launchDate": "Coming Soon",
+    "curriculum": [
+      {
+        "week": 1,
+        "topics": [
+          "Introduction to HR Communication",
+          "Effective Communication in HR",
+          "Active Listening Skills",
+          "Written Communication",
+          "Non-Verbal Communication",
+          "Presentation Skills",
+          "Cultural Intelligence",
+          "Mini Project - Communication Strategy"
+        ]
+      },
+      {
+        "week": 2,
+        "topics": [
+          "Conflict Resolution",
+          "Leadership Communication",
+          "Feedback Techniques",
+          "Negotiation Skills",
+          "Interviewing and Hiring",
+          "Employee Engagement",
+          "Crisis Communication",
+          "Mini Project - HR Communication Plan"
+        ]
+      }
+    ]
+  }
+]
