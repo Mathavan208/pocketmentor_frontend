@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { UserContext } from '../context/UserContext';
 import { FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
-
+import { Link } from 'react-router-dom';
 const AdminCourses = () => {
   const { token } = useContext(UserContext);
   const [courses, setCourses] = useState([]);

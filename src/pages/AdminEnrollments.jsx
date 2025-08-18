@@ -1,557 +1,726 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { UserContext } from '../context/UserContext';
-import { FaUsers, FaBook, FaChalkboardTeacher, FaMoneyBillWave, FaChartLine, FaUserCog, FaList, FaEnvelope, FaCheckCircle, FaClock } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { FaCheckCircle, FaTimesCircle, FaClock, FaCalendarCheck, FaRupeeSign, FaBook, FaVideo, FaClipboardCheck, FaFilePdf, FaLink, FaPlus, FaTrash } from 'react-icons/fa';
 
-const AdminDashboard = () => {
-  const { user, token } = useContext(UserContext);
-  const [stats, setStats] = useState({});
-  const [users, setUsers] = useState([]);
-  const [payments, setPayments] = useState([]);
+const AdminEnrollments = () => {
   const [enrollments, setEnrollments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [selectedEnrollment, setSelectedEnrollment] = useState(null);
+  const [selectedDay, setSelectedDay] = useState(1);
+  const [materials, setMaterials] = useState([]);
+  const [newMaterial, setNewMaterial] = useState({
+    title: '',
+    description: '',
+    type: 'link',
+    url: '',
+    name: ''
+  });
 
   useEffect(() => {
-    if (user && user.role !== 'admin') {
-      window.location.href = '/';
-      return;
-    }
-    const fetchDashboardData = async () => {
+    const fetchEnrollments = async () => {
       try {
-        const statsResponse = await fetch('/api/admin/dashboard', {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/admin/enrollments', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
         });
         
-        if (statsResponse.ok) {
-          const statsData = await statsResponse.json();
-          setStats(statsData.data || {});
-        }
-        
-        const usersResponse = await fetch('/api/admin/users', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (usersResponse.ok) {
-          const usersData = await usersResponse.json();
-          setUsers(usersData.data || []);
-        }
-        
-        const paymentsResponse = await fetch('/api/admin/payments', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (paymentsResponse.ok) {
-          const paymentsData = await paymentsResponse.json();
-          setPayments(paymentsData.data || []);
-        }
-        
-        const enrollmentsResponse = await fetch('/api/admin/enrollments', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (enrollmentsResponse.ok) {
-          const enrollmentsData = await enrollmentsResponse.json();
-          setEnrollments(enrollmentsData.data || []);
+        if (response.ok) {
+          const data = await response.json();
+          // Process enrollments to calculate total days based on course curriculum
+          const processedEnrollments = data.data.map(enrollment => {
+            if (enrollment.course && enrollment.course._id) {
+              // Fetch course details to get curriculum
+              fetchCourseDetails(enrollment.course._id, enrollment);
+            }
+            return enrollment;
+          });
+          
+          setEnrollments(processedEnrollments);
+        } else {
+          setError('Failed to fetch enrollments');
         }
       } catch (err) {
-        setError('Failed to fetch dashboard data');
-        console.error(err);
+        setError('Failed to fetch enrollments');
       } finally {
         setLoading(false);
       }
     };
-    if (token) {
-      fetchDashboardData();
-    }
-  }, [token, user]);
+    
+    fetchEnrollments();
+  }, []);
 
-  const updateUserRole = async (userId, newRole) => {
+  const fetchCourseDetails = async (courseId, enrollment) => {
     try {
-      const response = await fetch(`/api/admin/users/${userId}/role`, {
-        method: 'PUT',
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/courses/${courseId}`, {
         headers: {
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ role: newRole })
+        }
       });
+      
       if (response.ok) {
-        setUsers(users.map(user => 
-          user._id === userId ? { ...user, role: newRole } : user
-        ));
+        const courseData = await response.json();
+        
+        // Calculate total days from curriculum
+        let totalDays = 0;
+        if (courseData.curriculum) {
+          totalDays = courseData.curriculum.reduce((sum, week) => sum + week.topics.length, 0);
+        }
+        
+        // Initialize completedDays if not present or incorrect length
+        if (!enrollment.completedDays || enrollment.completedDays.length !== totalDays) {
+          enrollment.completedDays = Array.from({ length: totalDays }, (_, i) => ({
+            day: i + 1,
+            completed: false,
+            completedAt: null
+          }));
+        }
+        
+        // Calculate progress
+        const completedCount = enrollment.completedDays.filter(d => d.completed).length;
+        const progress = Math.round((completedCount / totalDays) * 100);
+        
+        // Update enrollment with course details
+        const enrollmentIndex = enrollments.findIndex(e => e._id === enrollment._id);
+        if (enrollmentIndex !== -1) {
+          const updatedEnrollments = [...enrollments];
+          updatedEnrollments[enrollmentIndex] = {
+            ...enrollment,
+            course: courseData,
+            totalDays,
+            progress
+          };
+          setEnrollments(updatedEnrollments);
+        }
       }
     } catch (err) {
-      console.error(err);
-      setError('Failed to update user role');
+      console.error('Failed to fetch course details:', err);
     }
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
+  const updatePaymentStatus = async (enrollmentId, status) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/admin/enrollments/${enrollmentId}/payment-status`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ paymentStatus: status })
+      });
+      
+      if (response.ok) {
+        setEnrollments(enrollments.map(e => 
+          e._id === enrollmentId ? { ...e, paymentStatus: status } : e
+        ));
+      } else {
+        setError('Failed to update payment status');
+      }
+    } catch (err) {
+      setError('Failed to update payment status');
+    }
+  };
+
+  const updateDayProgress = async (enrollmentId, dayNumber, completed) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/admin/enrollments/${enrollmentId}/progress`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ dayNumber, completed: Boolean(completed) })
+      });
+      
+      if (response.ok) {
+        setEnrollments(enrollments.map(e => {
+          if (e._id === enrollmentId) {
+            const updatedDays = e.completedDays.map(day => 
+              day.day === dayNumber ? { ...day, completed: Boolean(completed), completedAt: completed ? new Date() : null } : day
+            );
+            
+            // Recalculate progress
+            const completedCount = updatedDays.filter(d => d.completed).length;
+            const progress = Math.round((completedCount / e.totalDays) * 100);
+            
+            return { 
+              ...e, 
+              completedDays: updatedDays,
+              progress
+            };
+          }
+          return e;
+        }));
+      } else {
+        setError('Failed to update progress');
+      }
+    } catch (err) {
+      setError('Failed to update progress');
+    }
+  };
+
+  const deleteEnrollment = async (enrollmentId) => {
+    if (window.confirm('Are you sure you want to delete this enrollment? This action cannot be undone.')) {
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/admin/enrollments/${enrollmentId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          setEnrollments(enrollments.filter(e => e._id !== enrollmentId));
+        } else {
+          setError('Failed to delete enrollment');
+        }
+      } catch (err) {
+        setError('Failed to delete enrollment');
+      }
+    }
+  };
+
+  const openDayProgressModal = (enrollment, day) => {
+    setSelectedEnrollment(enrollment);
+    setSelectedDay(day);
+    setNewMaterial({
+      title: '',
+      description: '',
+      type: 'link',
+      url: '',
+      name: ''
     });
+    fetchCourseMaterials(enrollment.course._id, day);
   };
 
-  // Calculate revenue from enrollments with paid status
-  const calculateRevenue = () => {
-    return enrollments
-      .filter(enrollment => enrollment.paymentStatus === 'paid')
-      .reduce((total, enrollment) => {
-        // Get course price from the enrollment's course data
-        const coursePrice = enrollment.course?.price || 0;
-        return total + coursePrice;
-      }, 0);
+  const fetchCourseMaterials = async (courseId, day) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/courses/${courseId}/materials/${day}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setMaterials(data.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch materials:', err);
+    }
   };
 
-  // Calculate pending revenue from enrollments with pending status
-  const calculatePendingRevenue = () => {
-    return enrollments
-      .filter(enrollment => enrollment.paymentStatus === 'pending')
-      .reduce((total, enrollment) => {
-        const coursePrice = enrollment.course?.price || 0;
-        return total + coursePrice;
-      }, 0);
+  const handleMaterialChange = (e) => {
+    const { name, value } = e.target;
+    setNewMaterial(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  // Calculate total revenue
-  const totalRevenue = calculateRevenue();
-  const pendingRevenue = calculatePendingRevenue();
-  const totalUsers = stats.totalUsers || users.length;
-  const totalCourses = stats.totalCourses || 0;
-  const totalWorkshops = stats.totalWorkshops || 0;
-
-  // Calculate enrollment statistics
-  const totalEnrollments = enrollments.length;
-  const paidEnrollments = enrollments.filter(e => e.paymentStatus === 'paid').length;
-  const pendingEnrollments = enrollments.filter(e => e.paymentStatus === 'pending').length;
-  const failedEnrollments = enrollments.filter(e => e.paymentStatus === 'failed').length;
+  const handleAddMaterial = async (e) => {
+    e.preventDefault();
+    
+    if (!selectedEnrollment || !selectedDay) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/admin/courses/${selectedEnrollment.course._id}/materials`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          courseId: selectedEnrollment.course._id,
+          day: selectedDay,
+          title: newMaterial.title,
+          description: newMaterial.description,
+          materials: [{
+            type: newMaterial.type,
+            url: newMaterial.url,
+            name: newMaterial.name
+          }]
+        })
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setMaterials(prev => [...prev, data.data]);
+        // Reset form
+        setNewMaterial({
+          title: '',
+          description: '',
+          type: 'link',
+          url: '',
+          name: ''
+        });
+      } else {
+        setError('Failed to add material');
+      }
+    } catch (err) {
+      setError('Failed to add material');
+    }
+  };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-deep-blue to-purple-blue">
-        <div className="text-center">
-          <div className="w-12 h-12 mx-auto mb-4 border-b-2 border-white rounded-full animate-spin"></div>
-          <p className="text-white">Loading dashboard...</p>
-        </div>
-      </div>
-    );
+    return <div className="flex items-center justify-center h-screen">Loading enrollments...</div>;
   }
-
+  
   if (error) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-deep-blue to-purple-blue">
-        <div className="w-full max-w-md p-8 text-center bg-white shadow-xl rounded-xl">
-          <h2 className="mb-4 text-2xl font-bold text-red-600">Error</h2>
-          <p className="mb-6 text-gray-600">{error}</p>
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-6 py-2 text-white rounded-lg bg-gradient-to-r from-deep-blue to-purple-blue hover:from-purple-blue hover:to-light-blue"
-          >
-            Retry
-          </button>
-        </div>
-      </div>
-    );
+    return <div className="py-10 text-center text-red-500">Error: {error}</div>;
   }
 
   return (
-    <div className="min-h-screen py-4 bg-gradient-to-b from-deep-blue/10 to-white md:py-12">
+    <div className="min-h-screen py-12 bg-gradient-to-b from-deep-blue/10 to-white">
       <div className="container px-4 mx-auto">
-        <div className="mx-auto max-w-7xl">
-          {/* Header */}
-          <div className="mb-6 md:mb-8">
-            <h1 className="text-2xl font-bold md:text-3xl text-deep-blue">Admin Dashboard</h1>
-            <p className="mt-1 text-sm text-gray-600 md:text-base">Manage your educational platform</p>
-          </div>
+        <div className="max-w-6xl mx-auto">
+          <h1 className="mb-8 text-3xl font-bold text-deep-blue">Enrollment Management</h1>
           
-          {/* Mobile Navigation */}
-          <div className="mb-6 md:hidden">
-            <div className="flex pb-2 space-x-2 overflow-x-auto">
-              {[
-                { id: 'dashboard', label: 'Dashboard', icon: <FaChartLine /> },
-                { id: 'users', label: 'Users', icon: <FaUsers /> },
-                { id: 'courses', label: 'Courses', icon: <FaBook /> },
-                { id: 'enrollments', label: 'Enrollments', icon: <FaList /> },
-                { id: 'payments', label: 'Payments', icon: <FaMoneyBillWave /> }
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center px-4 py-2 rounded-lg whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? 'bg-deep-blue text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
-                >
-                  <span className="mr-2">{tab.icon}</span>
-                  {tab.label}
-                </button>
-              ))}
+          {/* Stats Cards */}
+          <div className="grid grid-cols-1 gap-6 mb-8 md:grid-cols-4">
+            <div className="p-6 bg-white shadow-lg rounded-xl">
+              <div className="flex items-center">
+                <div className="p-3 mr-4 text-blue-600 bg-blue-100 rounded-full">
+                  <FaClock className="text-2xl" />
+                </div>
+                <div>
+                  <p className="text-gray-500">Pending Payments</p>
+                  <p className="text-2xl font-bold">{enrollments.filter(e => e.paymentStatus === 'pending').length}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 bg-white shadow-lg rounded-xl">
+              <div className="flex items-center">
+                <div className="p-3 mr-4 text-green-600 bg-green-100 rounded-full">
+                  <FaCheckCircle className="text-2xl" />
+                </div>
+                <div>
+                  <p className="text-gray-500">Completed Payments</p>
+                  <p className="text-2xl font-bold">{enrollments.filter(e => e.paymentStatus === 'paid').length}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 bg-white shadow-lg rounded-xl">
+              <div className="flex items-center">
+                <div className="p-3 mr-4 text-purple-600 bg-purple-100 rounded-full">
+                  <FaCalendarCheck className="text-2xl" />
+                </div>
+                <div>
+                  <p className="text-gray-500">Total Enrollments</p>
+                  <p className="text-2xl font-bold">{enrollments.length}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 bg-white shadow-lg rounded-xl">
+              <div className="flex items-center">
+                <div className="p-3 mr-4 text-red-600 bg-red-100 rounded-full">
+                  <FaTimesCircle className="text-2xl" />
+                </div>
+                <div>
+                  <p className="text-gray-500">Failed Payments</p>
+                  <p className="text-2xl font-bold">{enrollments.filter(e => e.paymentStatus === 'failed').length}</p>
+                </div>
+              </div>
             </div>
           </div>
           
-          {/* Desktop Navigation */}
-          <div className="hidden mb-6 space-x-4 md:flex">
-            {[
-              { id: 'dashboard', label: 'Dashboard', icon: <FaChartLine /> },
-              { id: 'users', label: 'Users', icon: <FaUsers /> },
-              { id: 'courses', label: 'Courses', icon: <FaBook /> },
-              { id: 'enrollments', label: 'Enrollments', icon: <FaList /> },
-              { id: 'payments', label: 'Payments', icon: <FaMoneyBillWave /> }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center px-4 py-2 rounded-lg ${
-                  activeTab === tab.id
-                    ? 'bg-deep-blue text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                }`}
-              >
-                <span className="mr-2">{tab.icon}</span>
-                {tab.label}
-              </button>
-            ))}
+          {/* Revenue Summary */}
+          <div className="p-6 mb-8 bg-white shadow-lg rounded-xl">
+            <h2 className="mb-4 text-xl font-bold text-deep-blue">Revenue Summary</h2>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="p-4 rounded-lg bg-green-50">
+                <p className="text-gray-600">Total Revenue</p>
+                <p className="text-2xl font-bold text-green-600">
+                  ₹{enrollments
+                    .filter(e => e.paymentStatus === 'paid')
+                    .reduce((sum, e) => sum + (e.amount || 0), 0)
+                    .toFixed(2)}
+                </p>
+              </div>
+              <div className="p-4 rounded-lg bg-yellow-50">
+                <p className="text-gray-600">Pending Revenue</p>
+                <p className="text-2xl font-bold text-yellow-600">
+                  ₹{enrollments
+                    .filter(e => e.paymentStatus === 'pending')
+                    .reduce((sum, e) => sum + (e.amount || 0), 0)
+                    .toFixed(2)}
+                </p>
+              </div>
+              <div className="p-4 rounded-lg bg-blue-50">
+                <p className="text-gray-600">Total Enrollments</p>
+                <p className="text-2xl font-bold text-blue-600">{enrollments.length}</p>
+              </div>
+            </div>
           </div>
           
-          {/* Dashboard Content */}
-          {activeTab === 'dashboard' && (
-            <>
-              {/* Stats Cards - Responsive Grid */}
-              <div className="grid grid-cols-2 gap-4 mb-6 md:grid-cols-4 md:gap-6">
-                <div className="p-4 transition-shadow bg-white shadow-lg rounded-xl hover:shadow-xl">
-                  <div className="flex items-center">
-                    <div className="p-3 mr-4 text-blue-600 bg-blue-100 rounded-full md:p-4">
-                      <FaUsers className="text-xl md:text-2xl" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 md:text-sm">Total Users</p>
-                      <p className="text-xl font-bold md:text-2xl">{totalUsers}</p>
-                      <div className="hidden mt-1 text-xs text-green-500 md:block">
-                        <span>↑ 12%</span> from last month
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="p-4 transition-shadow bg-white shadow-lg rounded-xl hover:shadow-xl">
-                  <div className="flex items-center">
-                    <div className="p-3 mr-4 text-purple-600 bg-purple-100 rounded-full md:p-4">
-                      <FaBook className="text-xl md:text-2xl" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 md:text-sm">Total Courses</p>
-                      <p className="text-xl font-bold md:text-2xl">{totalCourses}</p>
-                      <div className="hidden mt-1 text-xs text-green-500 md:block">
-                        <span>↑ 3</span> new this month
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="p-4 transition-shadow bg-white shadow-lg rounded-xl hover:shadow-xl">
-                  <div className="flex items-center">
-                    <div className="p-3 mr-4 text-green-600 bg-green-100 rounded-full md:p-4">
-                      <FaChalkboardTeacher className="text-xl md:text-2xl" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 md:text-sm">Total Workshops</p>
-                      <p className="text-xl font-bold md:text-2xl">{totalWorkshops}</p>
-                      <div className="hidden mt-1 text-xs text-green-500 md:block">
-                        <span>↑ 2</span> new this month
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="p-4 transition-shadow bg-white shadow-lg rounded-xl hover:shadow-xl">
-                  <div className="flex items-center">
-                    <div className="p-3 mr-4 text-yellow-600 bg-yellow-100 rounded-full md:p-4">
-                      <FaMoneyBillWave className="text-xl md:text-2xl" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500 md:text-sm">Total Revenue</p>
-                      <p className="text-xl font-bold md:text-2xl">₹{totalRevenue}</p>
-                      <div className="hidden mt-1 text-xs text-green-500 md:block">
-                        <span>↑ 24%</span> from last month
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Revenue Overview */}
-              <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-3">
-                <div className="p-4 bg-white shadow-lg rounded-xl">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-gray-700 md:text-lg">Revenue Overview</h3>
-                    <FaMoneyBillWave className="hidden text-green-500 md:block" />
-                  </div>
-                  <div className="space-y-2 md:space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-600 md:text-sm">Total Revenue</span>
-                      <span className="text-sm font-bold text-green-600 md:text-base">₹{totalRevenue.toFixed(2)}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-600 md:text-sm">Pending Revenue</span>
-                      <span className="text-sm font-bold text-yellow-600 md:text-base">₹{pendingRevenue.toFixed(2)}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-600 md:text-sm">Total Enrollments</span>
-                      <span className="text-sm font-bold text-blue-600 md:text-base">{totalEnrollments}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="p-4 bg-white shadow-lg rounded-xl">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-gray-700 md:text-lg">Payment Status</h3>
-                    <FaCheckCircle className="hidden text-green-500 md:block" />
-                  </div>
-                  <div className="space-y-2 md:space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-600 md:text-sm">Paid</span>
-                      <span className="text-sm font-bold text-green-600 md:text-base">{paidEnrollments}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-600 md:text-sm">Pending</span>
-                      <span className="text-sm font-bold text-yellow-600 md:text-base">{pendingEnrollments}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-600 md:text-sm">Failed</span>
-                      <span className="text-sm font-bold text-red-600 md:text-base">{failedEnrollments}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="p-4 bg-white shadow-lg rounded-xl">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-gray-700 md:text-lg">Quick Actions</h3>
-                    <FaUserCog className="hidden text-purple-500 md:block" />
-                  </div>
-                  <div className="space-y-2 md:space-y-3">
-                    <Link to="/admin/enrollments" className="block w-full px-3 py-2 text-xs text-center text-white transition-colors bg-blue-500 rounded-lg md:text-sm hover:bg-blue-600 md:w-auto">
-                      Manage Enrollments
-                    </Link>
-                    <Link to="/admin/courses" className="block w-full px-3 py-2 text-xs text-center text-white transition-colors bg-purple-500 rounded-lg md:text-sm hover:bg-purple-600 md:w-auto">
-                      Manage Courses
-                    </Link>
-                    <Link to="/admin/users" className="block w-full px-3 py-2 text-xs text-center text-white transition-colors bg-green-500 rounded-lg md:text-sm hover:bg-green-600 md:w-auto">
-                      Manage Users
-                    </Link>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Recent Users */}
-              <div className="p-4 bg-white shadow-lg rounded-xl">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="flex items-center text-lg font-bold md:text-xl text-deep-blue">
-                    <FaUsers className="mr-2" /> Recent Users
-                  </h2>
-                  <Link to="/admin/users" className="text-xs font-medium md:text-sm text-purple-blue hover:text-deep-blue">
-                    View All Users →
-                  </Link>
-                </div>
-                
-                {/* Mobile Users List */}
-                <div className="space-y-3 md:hidden">
-                  {users.slice(0, 3).map((user) => (
-                    <div key={user._id} className="p-3 border border-gray-200 rounded-lg">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 w-8 h-8">
-                          <div className="flex items-center justify-center w-8 h-8 text-white rounded-full bg-deep-blue">
-                            {user.name.charAt(0)}
-                          </div>
-                        </div>
-                        <div className="ml-3">
-                          <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                          <div className="text-xs text-gray-500">{user.email}</div>
-                          <div className="mt-1">
-                            <select
-                              value={user.role}
-                              onChange={(e) => updateUserRole(user._id, e.target.value)}
-                              className="text-xs border border-gray-300 rounded"
-                            >
-                              <option value="user">User</option>
-                              <option value="admin">Admin</option>
-                            </select>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Desktop Users Table */}
-                <div className="hidden md:block">
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="px-4 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">User</th>
-                          <th className="px-4 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Email</th>
-                          <th className="px-4 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Role</th>
-                          <th className="px-4 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Joined</th>
-                          <th className="px-4 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {users.slice(0, 5).map((user) => (
-                          <tr key={user._id} className="hover:bg-gray-50">
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <div className="flex-shrink-0 w-10 h-10">
-                                  <div className="flex items-center justify-center w-10 h-10 text-white rounded-full bg-deep-blue">
-                                    {user.name.charAt(0)}
-                                  </div>
-                                </div>
-                                <div className="ml-4">
-                                  <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <div className="text-sm text-gray-900">{user.email}</div>
-                            </td>
-                            <td className="px-4 py-4 whitespace-nowrap">
-                              <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                user.role === 'admin' 
-                                  ? 'bg-purple-100 text-purple-800' 
-                                  : 'bg-green-100 text-green-800'
-                              }`}>
-                                {user.role}
-                              </span>
-                            </td>
-                            <td className="px-4 py-4 text-sm text-gray-500 whitespace-nowrap">
-                              {formatDate(user.createdAt)}
-                            </td>
-                            <td className="px-4 py-4 text-sm font-medium whitespace-nowrap">
-                              <select
-                                value={user.role}
-                                onChange={(e) => updateUserRole(user._id, e.target.value)}
-                                className="px-2 py-1 text-sm border border-gray-300 rounded"
-                              >
-                                <option value="user">User</option>
-                                <option value="admin">Admin</option>
-                              </select>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-          
-          {/* Users Tab Content */}
-          {activeTab === 'users' && (
-            <div className="p-4 bg-white shadow-lg rounded-xl">
-              <h2 className="mb-4 text-lg font-bold md:text-xl text-deep-blue">User Management</h2>
-              {/* Mobile users list would go here */}
-              <div className="space-y-3 md:hidden">
-                {users.map((user) => (
-                  <div key={user._id} className="p-3 border border-gray-200 rounded-lg">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 w-8 h-8">
-                          <div className="flex items-center justify-center w-8 h-8 text-white rounded-full bg-deep-blue">
-                            {user.name.charAt(0)}
-                          </div>
-                        </div>
-                        <div className="ml-3">
-                          <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                          <div className="text-xs text-gray-500">{user.email}</div>
-                        </div>
-                      </div>
-                      <select
-                        value={user.role}
-                        onChange={(e) => updateUserRole(user._id, e.target.value)}
-                        className="text-xs border border-gray-300 rounded"
-                      >
-                        <option value="user">User</option>
-                        <option value="admin">Admin</option>
-                      </select>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              {/* Desktop table */}
-              <div className="hidden overflow-x-auto md:block">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">User</th>
-                      <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Email</th>
-                      <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Role</th>
-                      <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {users.map((user) => (
-                      <tr key={user._id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="flex-shrink-0 w-10 h-10">
-                              <div className="flex items-center justify-center w-10 h-10 text-white rounded-full bg-deep-blue">
-                                {user.name.charAt(0)}
-                              </div>
-                            </div>
-                            <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">{user.name}</div>
+          {/* Enrollments Table */}
+          <div className="p-6 bg-white shadow-lg rounded-xl">
+            <h2 className="mb-6 text-xl font-bold text-deep-blue">All Enrollments</h2>
+            
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">User</th>
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Course</th>
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Duration</th>
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Amount</th>
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Payment Status</th>
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Progress</th>
+                    <th className="px-6 py-3 text-xs font-medium tracking-wider text-left text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {enrollments.map((enrollment) => (
+                    <tr key={enrollment._id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 w-10 h-10">
+                            <div className="flex items-center justify-center w-10 h-10 text-white rounded-full bg-deep-blue">
+                              {enrollment.user.name.charAt(0)}
                             </div>
                           </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{user.email}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            user.role === 'admin' 
-                              ? 'bg-purple-100 text-purple-800' 
-                              : 'bg-green-100 text-green-800'
-                          }`}>
-                            {user.role}
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{enrollment.user.name}</div>
+                            <div className="text-sm text-gray-500">{enrollment.user.email}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{enrollment.course?.title || 'Loading...'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {enrollment.course?.curriculum 
+                            ? `${enrollment.course.curriculum.length} weeks (${enrollment.totalDays || 0} days)`
+                            : 'Loading...'
+                          }
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <FaRupeeSign className="mr-1 text-green-600" />
+                          <span className="text-sm font-medium text-gray-900">
+                            {enrollment.amount?.toFixed(2) || '0.00'}
                           </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm font-medium whitespace-nowrap">
-                          <select
-                            value={user.role}
-                            onChange={(e) => updateUserRole(user._id, e.target.value)}
-                            className="px-2 py-1 text-sm border border-gray-300 rounded"
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          enrollment.paymentStatus === 'paid' 
+                            ? 'bg-green-100 text-green-800' 
+                            : enrollment.paymentStatus === 'failed' 
+                              ? 'bg-red-100 text-red-800' 
+                              : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {enrollment.paymentStatus === 'paid' ? (
+                            <FaCheckCircle className="inline mr-1" />
+                          ) : enrollment.paymentStatus === 'failed' ? (
+                            <FaTimesCircle className="inline mr-1" />
+                          ) : (
+                            <FaClock className="inline mr-1" />
+                          )}
+                          {enrollment.paymentStatus}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {enrollment.paymentStatus === 'paid' ? (
+                          <div>
+                            <div className="flex items-center mb-2">
+                              <div className="w-full bg-gray-200 rounded-full h-2.5 mr-2">
+                                <div 
+                                  className="bg-green-600 h-2.5 rounded-full" 
+                                  style={{ width: `${enrollment.progress || 0}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-sm font-medium text-gray-700">{enrollment.progress || 0}%</span>
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {enrollment.completedDays?.slice(0, 14).map((day, index) => (
+                                <button
+                                  key={index}
+                                  onClick={() => openDayProgressModal(enrollment, day.day)}
+                                  className={`w-6 h-6 rounded-full text-xs flex items-center justify-center ${
+                                    day.completed 
+                                      ? 'bg-green-500 text-white' 
+                                      : 'bg-gray-200 text-gray-700'
+                                  }`}
+                                  title={`Day ${day.day}`}
+                                >
+                                  {day.day}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-500">Payment pending</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-medium whitespace-nowrap">
+                        <div className="flex space-x-2">
+                          {enrollment.paymentStatus !== 'paid' && (
+                            <>
+                              <button
+                                onClick={() => updatePaymentStatus(enrollment._id, 'paid')}
+                                className="px-3 py-1 text-xs text-green-700 bg-green-100 rounded hover:bg-green-200"
+                              >
+                                Mark Paid
+                              </button>
+                              <button
+                                onClick={() => updatePaymentStatus(enrollment._id, 'failed')}
+                                className="px-3 py-1 text-xs text-red-700 bg-red-100 rounded hover:bg-red-200"
+                              >
+                                Mark Failed
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => deleteEnrollment(enrollment._id)}
+                            className="px-3 py-1 text-xs text-red-700 bg-red-100 rounded hover:bg-red-200"
+                            title="Delete enrollment"
                           >
-                            <option value="user">User</option>
-                            <option value="admin">Admin</option>
-                          </select>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                            <FaTrash className="inline" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
-          
-          {/* Other tab content would be added similarly */}
+          </div>
         </div>
       </div>
+
+      {/* Day Progress Modal */}
+      {selectedEnrollment && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+          <div className="w-full max-w-4xl bg-white shadow-xl rounded-xl">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-deep-blue">
+                  Manage Progress for {selectedEnrollment.course?.title || 'Course'}
+                </h2>
+                <button
+                  onClick={() => setSelectedEnrollment(null)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="mb-6">
+                <h3 className="mb-4 text-lg font-semibold text-deep-blue">Select Day</h3>
+                <div className="flex flex-wrap gap-2">
+                  {selectedEnrollment.completedDays?.slice(0, 14).map((day, index) => (
+                    <button
+                      key={index}
+                      onClick={() => {
+                        setSelectedDay(day.day);
+                        fetchCourseMaterials(selectedEnrollment.course._id, day.day);
+                      }}
+                      className={`px-4 py-2 rounded-lg transition-colors ${
+                        day.day === selectedDay
+                          ? 'bg-green-500 text-white'
+                          : day.completed
+                            ? 'bg-green-300 text-green-800'
+                            : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      }`}
+                    >
+                      Day {day.day}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="mb-6">
+                <h3 className="mb-4 text-lg font-semibold text-deep-blue">Progress for Day {selectedDay}</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="meetAttended"
+                      checked={selectedEnrollment.completedDays?.find(d => d.day === selectedDay)?.completed || false}
+                      onChange={(e) => updateDayProgress(selectedEnrollment._id, selectedDay, e.target.checked)}
+                      className="mr-3"
+                    />
+                    <label htmlFor="meetAttended" className="flex items-center">
+                      <FaVideo className="mr-2 text-blue-500" />
+                      Meet Attended
+                    </label>
+                  </div>
+                  
+                  <div className="flex items-center">
+                    <input
+                      type="checkbox"
+                      id="assessmentCompleted"
+                      checked={selectedEnrollment.completedDays?.find(d => d.day === selectedDay)?.completed || false}
+                      onChange={(e) => updateDayProgress(selectedEnrollment._id, selectedDay, e.target.checked)}
+                      className="mr-3"
+                    />
+                    <label htmlFor="assessmentCompleted" className="flex items-center">
+                      <FaClipboardCheck className="mr-2 text-green-500" />
+                      Assessment Completed
+                    </label>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Course Materials Section */}
+              <div className="mb-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-deep-blue">Course Materials for Day {selectedDay}</h3>
+                  <button
+                    type="button"
+                    onClick={() => document.getElementById('material-form').classList.toggle('hidden')}
+                    className="flex items-center px-3 py-1 text-sm text-white bg-blue-500 rounded-lg hover:bg-blue-600"
+                  >
+                    <FaPlus className="mr-1" /> Add Material
+                  </button>
+                </div>
+                
+                {/* Add Material Form */}
+                <div id="material-form" className="hidden p-4 mb-6 rounded-lg bg-gray-50">
+                  <h4 className="mb-3 font-medium text-deep-blue">Add New Material</h4>
+                  <form onSubmit={handleAddMaterial} className="space-y-3">
+                    <div>
+                      <label className="block mb-1 text-sm font-medium text-gray-700">Title</label>
+                      <input
+                        type="text"
+                        name="title"
+                        value={newMaterial.title}
+                        onChange={handleMaterialChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block mb-1 text-sm font-medium text-gray-700">Description</label>
+                      <textarea
+                        name="description"
+                        value={newMaterial.description}
+                        onChange={handleMaterialChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        rows={2}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block mb-1 text-sm font-medium text-gray-700">Material Type</label>
+                      <select
+                        name="type"
+                        value={newMaterial.type}
+                        onChange={handleMaterialChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      >
+                        <option value="link">Link</option>
+                        <option value="pdf">PDF</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block mb-1 text-sm font-medium text-gray-700">
+                        {newMaterial.type === 'pdf' ? 'PDF URL' : 'Link URL'}
+                      </label>
+                      <input
+                        type="url"
+                        name="url"
+                        value={newMaterial.url}
+                        onChange={handleMaterialChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        required
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block mb-1 text-sm font-medium text-gray-700">Display Name</label>
+                      <input
+                        type="text"
+                        name="name"
+                        value={newMaterial.name}
+                        onChange={handleMaterialChange}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                        required
+                      />
+                    </div>
+                    
+                    <div className="flex justify-end space-x-2">
+                      <button
+                        type="button"
+                        onClick={() => document.getElementById('material-form').classList.add('hidden')}
+                        className="px-4 py-2 text-sm text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-4 py-2 text-sm text-white bg-blue-500 rounded-md hover:bg-blue-600"
+                      >
+                        Add Material
+                      </button>
+                    </div>
+                  </form>
+                </div>
+                
+                {/* Materials List */}
+                {materials.length > 0 ? (
+                  <div className="space-y-3">
+                    {materials.map((material, index) => (
+                      <div key={index} className="p-4 rounded-lg bg-blue-50">
+                        <h4 className="font-semibold text-deep-blue">{material.title}</h4>
+                        <p className="mb-3 text-sm text-gray-600">{material.description}</p>
+                        <div className="flex flex-wrap gap-2">
+                          {material.materials.map((mat, matIndex) => (
+                            <a
+                              key={matIndex}
+                              href={mat.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center px-3 py-1 text-sm text-white bg-blue-500 rounded hover:bg-blue-600"
+                            >
+                              {mat.type === 'pdf' ? <FaFilePdf className="mr-1" /> : <FaLink className="mr-1" />}
+                              {mat.name}
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-6 text-center text-gray-500">
+                    <FaBook className="mx-auto mb-2 text-3xl" />
+                    <p>No materials available for Day {selectedDay}</p>
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex justify-end space-x-4">
+                <button
+                  onClick={() => setSelectedEnrollment(null)}
+                  className="px-6 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-100"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default AdminDashboard;
+export default AdminEnrollments;
