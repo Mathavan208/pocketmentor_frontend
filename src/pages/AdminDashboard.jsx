@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { UserContext } from '../context/UserContext';
-import { FaUsers, FaBook, FaChalkboardTeacher, FaMoneyBillWave, FaChartLine, FaUserCog, FaList, FaEnvelope, FaCheckCircle, FaClock } from 'react-icons/fa';
+import { FaUsers, FaBook, FaChalkboardTeacher, FaMoneyBillWave, FaChartLine, FaUserCog, FaList, FaEnvelope, FaCheckCircle, FaClock, FaCalendarAlt, FaUser } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 const AdminDashboard = () => {
@@ -9,6 +9,8 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [payments, setPayments] = useState([]);
   const [enrollments, setEnrollments] = useState([]);
+  const [workshops, setWorkshops] = useState([]);
+  const [instructors, setInstructors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -17,51 +19,61 @@ const AdminDashboard = () => {
       window.location.href = '/';
       return;
     }
+    
     const fetchDashboardData = async () => {
       try {
-         const API_URL = import.meta.env.VITE_API_URL;
-        const statsResponse = await fetch(`${API_URL}/admin/dashboard`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
+        const API_URL = import.meta.env.VITE_API_URL;
         
-        if (statsResponse.ok) {
-          const statsData = await statsResponse.json();
+        // Fetch all dashboard data
+        const [statsRes, usersRes, paymentsRes, enrollmentsRes, workshopsRes, instructorsRes] = await Promise.all([
+          fetch(`${API_URL}/admin/dashboard`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
+          fetch(`${API_URL}/admin/users`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
+          fetch(`${API_URL}/admin/payments`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
+          fetch(`${API_URL}/admin/enrollments`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
+          fetch(`${API_URL}/api/workshops`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
+          fetch(`${API_URL}/api/instructors`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+        ]);
+        
+        if (statsRes.ok) {
+          const statsData = await statsRes.json();
           setStats(statsData.data || {});
         }
         
-        const usersResponse = await fetch(`${API_URL}/admin/users`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (usersResponse.ok) {
-          const usersData = await usersResponse.json();
+        if (usersRes.ok) {
+          const usersData = await usersRes.json();
           setUsers(usersData.data || []);
         }
         
-        const paymentsResponse = await fetch(`${API_URL}/admin/payments`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (paymentsResponse.ok) {
-          const paymentsData = await paymentsResponse.json();
+        if (paymentsRes.ok) {
+          const paymentsData = await paymentsRes.json();
           setPayments(paymentsData.data || []);
         }
         
-        const enrollmentsResponse = await fetch(`${API_URL}/admin/enrollments`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        });
-        
-        if (enrollmentsResponse.ok) {
-          const enrollmentsData = await enrollmentsResponse.json();
+        if (enrollmentsRes.ok) {
+          const enrollmentsData = await enrollmentsRes.json();
           setEnrollments(enrollmentsData.data || []);
+        }
+        
+        if (workshopsRes.ok) {
+          const workshopsData = await workshopsRes.json();
+          setWorkshops(workshopsData || []);
+        }
+        
+        if (instructorsRes.ok) {
+          const instructorsData = await instructorsRes.json();
+          setInstructors(instructorsData || []);
         }
       } catch (err) {
         setError('Failed to fetch dashboard data');
@@ -70,6 +82,7 @@ const AdminDashboard = () => {
         setLoading(false);
       }
     };
+    
     if (token) {
       fetchDashboardData();
     }
@@ -86,6 +99,7 @@ const AdminDashboard = () => {
         },
         body: JSON.stringify({ role: newRole })
       });
+      
       if (response.ok) {
         setUsers(users.map(user => 
           user._id === userId ? { ...user, role: newRole } : user
@@ -110,7 +124,6 @@ const AdminDashboard = () => {
     return enrollments
       .filter(enrollment => enrollment.paymentStatus === 'paid')
       .reduce((total, enrollment) => {
-        // Get course price from the enrollment's course data
         const coursePrice = enrollment.course?.price || 199;
         return total + coursePrice;
       }, 0);
@@ -126,7 +139,6 @@ const AdminDashboard = () => {
       }, 0);
   };
 
-  // Calculate total revenue
   const totalRevenue = calculateRevenue();
   const pendingRevenue = calculatePendingRevenue();
   const totalUsers = stats.totalUsers || users.length;
@@ -239,7 +251,7 @@ const AdminDashboard = () => {
               </div>
             </div>
           </div>
-
+          
           {/* Revenue Overview */}
           <div className="grid grid-cols-1 gap-6 mb-8 md:grid-cols-3">
             <div className="p-6 bg-white shadow-lg rounded-xl">
@@ -296,7 +308,13 @@ const AdminDashboard = () => {
                 <Link to="/admin/courses" className="block w-full px-4 py-2 text-center text-white transition-colors bg-purple-500 rounded-lg hover:bg-purple-600">
                   Manage Courses
                 </Link>
-                <Link to="/admin/users" className="block w-full px-4 py-2 text-center text-white transition-colors bg-green-500 rounded-lg hover:bg-green-600">
+                <Link to="/admin/workshops" className="block w-full px-4 py-2 text-center text-white transition-colors bg-green-500 rounded-lg hover:bg-green-600">
+                  Manage Workshops
+                </Link>
+                <Link to="/admin/instructors" className="block w-full px-4 py-2 text-center text-white transition-colors bg-yellow-500 rounded-lg hover:bg-yellow-600">
+                  Manage Instructors
+                </Link>
+                <Link to="/admin/users" className="block w-full px-4 py-2 text-center text-white transition-colors bg-red-500 rounded-lg hover:bg-red-600">
                   Manage Users
                 </Link>
               </div>
@@ -370,9 +388,67 @@ const AdminDashboard = () => {
               </table>
             </div>
           </div>
-          
-          {/* Recent Enrollments */}
 
+          {/* Recent Workshops */}
+          <div className="p-6 mb-8 bg-white shadow-lg rounded-xl">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="flex items-center text-xl font-bold text-deep-blue">
+                <FaCalendarAlt className="mr-2" /> Recent Workshops
+              </h2>
+              <Link to="/admin/workshops" className="font-medium text-purple-blue hover:text-deep-blue">
+                View All Workshops →
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {workshops.slice(0, 6).map((workshop) => (
+                <div key={workshop._id} className="p-4 transition-shadow border border-gray-200 rounded-lg hover:shadow-md">
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="font-semibold text-gray-900">{workshop.title}</h3>
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      workshop.status === 'available' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {workshop.status}
+                    </span>
+                  </div>
+                  <p className="mb-3 text-sm text-gray-600">{workshop.description.substring(0, 80)}...</p>
+                  <div className="flex items-center text-sm text-gray-500">
+                    <FaCalendarAlt className="mr-1" />
+                    <span>{workshop.launchDate || 'TBD'}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Recent Instructors */}
+          <div className="p-6 mb-8 bg-white shadow-lg rounded-xl">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="flex items-center text-xl font-bold text-deep-blue">
+                <FaUser className="mr-2" /> Recent Instructors
+              </h2>
+              <Link to="/admin/instructors" className="font-medium text-purple-blue hover:text-deep-blue">
+                View All Instructors →
+              </Link>
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {instructors.slice(0, 6).map((instructor) => (
+                <div key={instructor._id} className="p-4 transition-shadow border border-gray-200 rounded-lg hover:shadow-md">
+                  <div className="flex items-center mb-3">
+                    <div className="flex-shrink-0 w-12 h-12 mr-3">
+                      <div className="flex items-center justify-center w-12 h-12 font-bold text-white rounded-full bg-deep-blue">
+                        {instructor.name.charAt(0)}
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{instructor.name}</h3>
+                      <p className="text-sm text-gray-600">{instructor.profession}</p>
+                    </div>
+                  </div>
+                  <p className="text-sm text-gray-600">{instructor.bio.substring(0, 100)}...</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </div>
