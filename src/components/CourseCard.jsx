@@ -150,12 +150,12 @@ const CourseCard = ({ course }) => {
                   {enrolling ? 'Enrolling...' : enrolled ? 'Payment Pending' : 'Enroll Now'}
                 </button>
               ) : (
-                <a 
-                  href="/login"
+                <Link
+                  to="/login"
                   className="flex-1 px-4 py-2 text-center text-white transition-all duration-300 bg-green-500 rounded-lg hover:bg-green-600"
                 >
                   Login to Enroll
-                </a>
+                </Link>
               )}
             </>
           ) : (
