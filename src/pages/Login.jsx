@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useUser } from '../context/UserContext';
 import { FaUser, FaLock } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import { Link } from 'react-router-dom';
 
 const Login = () => {
   const [email, setEmail] = useState('');

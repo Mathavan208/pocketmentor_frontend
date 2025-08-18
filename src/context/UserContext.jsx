@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-
+import {login,getProfile,register} from '../services/authService';
 // Create the context
 const UserContext = createContext();
 
@@ -19,11 +19,7 @@ export const UserProvider = ({ children }) => {
 
   const fetchUserInfo = async () => {
     try {
-      const response = await fetch('/users/profile', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await getProfile();
 
       if (response.ok) {
         const userData = await response.json();
@@ -42,14 +38,7 @@ export const UserProvider = ({ children }) => {
   };
 
   const login = async (email, password) => {
-    const response = await fetch('/users/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
-  console.log(response);
+    const response = await login(email,password);
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(errorData.message || 'Login failed');
@@ -62,13 +51,7 @@ export const UserProvider = ({ children }) => {
   };
 
   const register = async (name, email, password) => {
-    const response = await fetch('/users/register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ name, email, password }),
-    });
+    const response = await register(name,email,password);
 
     if (!response.ok) {
       const errorData = await response.json();
