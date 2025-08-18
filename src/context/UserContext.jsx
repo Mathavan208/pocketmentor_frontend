@@ -41,14 +41,19 @@ export const UserProvider = ({ children }) => {
     }
   };
 
-  const login = async (email, password) => {
-    const response = await fetch('/api/users/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password }),
-    });
+  // UserContext.js
+const login = async (email, password) => {
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const response = await fetch(`${API_URL}/api/users/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ email, password }),
+    credentials: 'include' // Important for cookies
+  });
+  
+  
   console.log(response);
     if (!response.ok) {
       const errorData = await response.json();
