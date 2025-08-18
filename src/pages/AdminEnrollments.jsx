@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { UserContext } from '../context/UserContext';
 import { FaUsers, FaBook, FaChalkboardTeacher, FaMoneyBillWave, FaChartLine, FaUserCog, FaList, FaEnvelope, FaCheckCircle, FaClock } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 
 const AdminDashboard = () => {
   const { user, token } = useContext(UserContext);
@@ -341,15 +342,15 @@ const AdminDashboard = () => {
                     <FaUserCog className="hidden text-purple-500 md:block" />
                   </div>
                   <div className="space-y-2 md:space-y-3">
-                    <a href="/admin/enrollments" className="block w-full px-3 py-2 text-xs text-center text-white transition-colors bg-blue-500 rounded-lg md:text-sm hover:bg-blue-600 md:w-auto">
+                    <Link to="/admin/enrollments" className="block w-full px-3 py-2 text-xs text-center text-white transition-colors bg-blue-500 rounded-lg md:text-sm hover:bg-blue-600 md:w-auto">
                       Manage Enrollments
-                    </a>
-                    <a href="/admin/courses" className="block w-full px-3 py-2 text-xs text-center text-white transition-colors bg-purple-500 rounded-lg md:text-sm hover:bg-purple-600 md:w-auto">
+                    </Link>
+                    <Link to="/admin/courses" className="block w-full px-3 py-2 text-xs text-center text-white transition-colors bg-purple-500 rounded-lg md:text-sm hover:bg-purple-600 md:w-auto">
                       Manage Courses
-                    </a>
-                    <a href="/admin/users" className="block w-full px-3 py-2 text-xs text-center text-white transition-colors bg-green-500 rounded-lg md:text-sm hover:bg-green-600 md:w-auto">
+                    </Link>
+                    <Link to="/admin/users" className="block w-full px-3 py-2 text-xs text-center text-white transition-colors bg-green-500 rounded-lg md:text-sm hover:bg-green-600 md:w-auto">
                       Manage Users
-                    </a>
+                    </Link>
                   </div>
                 </div>
               </div>
@@ -360,9 +361,9 @@ const AdminDashboard = () => {
                   <h2 className="flex items-center text-lg font-bold md:text-xl text-deep-blue">
                     <FaUsers className="mr-2" /> Recent Users
                   </h2>
-                  <a href="/admin/users" className="text-xs font-medium md:text-sm text-purple-blue hover:text-deep-blue">
+                  <Link to="/admin/users" className="text-xs font-medium md:text-sm text-purple-blue hover:text-deep-blue">
                     View All Users →
-                  </a>
+                  </Link>
                 </div>
                 
                 {/* Mobile Users List */}

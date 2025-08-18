@@ -287,15 +287,15 @@ const AdminDashboard = () => {
                 <FaUserCog className="text-2xl text-purple-500" />
               </div>
               <div className="space-y-3">
-                <a href="/admin/enrollments" className="block w-full px-4 py-2 text-center text-white transition-colors bg-blue-500 rounded-lg hover:bg-blue-600">
+                <Link to="/admin/enrollments" className="block w-full px-4 py-2 text-center text-white transition-colors bg-blue-500 rounded-lg hover:bg-blue-600">
                   Manage Enrollments
-                </a>
-                <a href="/admin/courses" className="block w-full px-4 py-2 text-center text-white transition-colors bg-purple-500 rounded-lg hover:bg-purple-600">
+                </Link>
+                <Link to="/admin/courses" className="block w-full px-4 py-2 text-center text-white transition-colors bg-purple-500 rounded-lg hover:bg-purple-600">
                   Manage Courses
-                </a>
-                <a href="/admin/users" className="block w-full px-4 py-2 text-center text-white transition-colors bg-green-500 rounded-lg hover:bg-green-600">
+                </Link>
+                <Link to="/admin/users" className="block w-full px-4 py-2 text-center text-white transition-colors bg-green-500 rounded-lg hover:bg-green-600">
                   Manage Users
-                </a>
+                </Link>
               </div>
             </div>
           </div>
@@ -306,9 +306,9 @@ const AdminDashboard = () => {
               <h2 className="flex items-center text-xl font-bold text-deep-blue">
                 <FaUsers className="mr-2" /> Recent Users
               </h2>
-              <a href="/admin/users" className="font-medium text-purple-blue hover:text-deep-blue">
+              <Link to="/admin/users" className="font-medium text-purple-blue hover:text-deep-blue">
                 View All Users →
-              </a>
+              </Link>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
