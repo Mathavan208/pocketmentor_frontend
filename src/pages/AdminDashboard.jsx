@@ -38,10 +38,10 @@ const AdminDashboard = () => {
           fetch(`${API_URL}/admin/enrollments`, {
             headers: { 'Authorization': `Bearer ${token}` }
           }),
-          fetch(`${API_URL}/api/workshops`, {
+          fetch(`${API_URL}/workshops`, {
             headers: { 'Authorization': `Bearer ${token}` }
           }),
-          fetch(`${API_URL}/api/instructors`, {
+          fetch(`${API_URL}/instructors`, {
             headers: { 'Authorization': `Bearer ${token}` }
           })
         ]);
