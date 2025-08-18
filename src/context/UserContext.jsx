@@ -19,7 +19,8 @@ export const UserProvider = ({ children }) => {
 
   const fetchUserInfo = async () => {
     try {
-      const response = await fetch('/api/users/profile', {
+      const API_URL = import.meta.env.VITE_API_URL;
+  const response = await fetch(`${API_URL}/users/profile`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -67,7 +68,8 @@ const login = async (email, password) => {
   };
 
   const register = async (name, email, password) => {
-    const response = await fetch('/api/users/register', {
+    const API_URL = import.meta.env.VITE_API_URL;
+  const response = await fetch(`${API_URL}/users/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
