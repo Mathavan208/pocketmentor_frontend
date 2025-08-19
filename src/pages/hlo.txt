@@ -63,7 +63,7 @@ const AdminEnrollments = () => {
       });
       
       if (response.ok) {
-        var courseData = await response.json();
+        const courseData = await response.json();
         
         // Calculate total days from curriculum
         let totalDays = 0;
@@ -409,8 +409,8 @@ const AdminEnrollments = () => {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm text-gray-900">
                           {enrollment.course?.curriculum 
-                            ? `${enrollment.course.curriculum.length} weeks (${enrollment.totalDays || 14} days)`
-                            : '2 weeks (14 days)'
+                            ? `${enrollment.course.curriculum.length} weeks (${enrollment.totalDays || 0} days)`
+                            : 'Loading...'
                           }
                         </div>
                       </td>

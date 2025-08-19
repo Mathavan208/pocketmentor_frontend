@@ -1,6 +1,5 @@
-// App.jsx
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route,HashRouter } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, HashRouter } from 'react-router-dom';
 import { UserProvider } from './context/UserContext';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -23,6 +22,7 @@ import AdminWorkshops from './pages/AdminWorkshops';
 import AdminInstructors from './pages/AdminInstructors';
 import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute';
+import Chatbot from './components/Chatbot'; // Import the chatbot component
 
 function App() {
   return (
@@ -86,10 +86,10 @@ function App() {
             </Routes>
           </main>
           <Footer />
+          <Chatbot /> {/* Add the chatbot component here */}
         </div>
       </HashRouter>
     </UserProvider>
   );
 }
-
 export default App;

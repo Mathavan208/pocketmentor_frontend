@@ -143,7 +143,7 @@ const AdminInstructors = () => {
                 </div>
               ))}
             </div>
-          ) : (
+          ): (
             <div className="py-12 text-center">
               <div className="text-gray-400">
                 <FaPlus className="mx-auto mb-4 text-5xl" />
