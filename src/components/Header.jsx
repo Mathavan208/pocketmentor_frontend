@@ -109,6 +109,7 @@ const Header = () => {
     { path: '/instructors', label: 'Instructors' },
     {path:'/workshops',label:'Workshops'},
     { path: '/contact', label: 'Contact' },
+    {path:'/login',label:'Login'},
     ...(user && user.role === 'admin' ? [{ path: '/admin', label: 'Admin' }] : []),
     ...(user ? [{ path: '/profile', label: 'Profile' }] : [])
   ];

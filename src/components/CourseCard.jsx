@@ -121,7 +121,7 @@ const CourseCard = ({ course }) => {
           <div className="flex justify-between text-sm">
             <span className="text-gray-600">Price:</span>
             <span className="font-medium">
-              {course.price === 0 ? 'Free' : `$${course.price.toFixed(2)}`}
+              {course.price === 0 ? 'Free' : `${course.price.toFixed(2)}`}
             </span>
           </div>
         </div>
