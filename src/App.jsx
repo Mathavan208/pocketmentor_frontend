@@ -85,7 +85,7 @@ function App() {
             </Routes>
           </main>
           <Footer />
-          <Chatbot /> {/* Add the chatbot component here */}
+          
         </div>
       </HashRouter>
     </UserProvider>
