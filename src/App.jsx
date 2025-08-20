@@ -22,7 +22,6 @@ import AdminWorkshops from './pages/AdminWorkshops';
 import AdminInstructors from './pages/AdminInstructors';
 import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute';
-import Chatbot from './components/Chatbot'; // Import the chatbot component
 
 function App() {
   return (
