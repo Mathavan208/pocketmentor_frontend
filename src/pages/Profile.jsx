@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  FaUser, FaLock, FaBook, FaChalkboardTeacher, FaCheckCircle, FaClock, FaFilePdf, FaLink, FaEdit, FaSave, FaTimes } from 'react-icons/fa';
+import {
+  FaUser, FaLock, FaBook, FaChalkboardTeacher, FaCheckCircle, FaClock,
+  FaFilePdf, FaLink, FaEdit, FaSave, FaTimes, FaCalendarAlt, FaDownload, FaExclamationTriangle
+} from 'react-icons/fa';
 import { Link } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 import { useUser } from '../context/UserContext';
+
 const API_URL = import.meta.env.VITE_API_URL;
-const PERPLEXITY_API_URL = `${API_URL}/gemini/chat`
+const PERPLEXITY_API_URL = `${API_URL}/gemini/chat`;
 const PERPLEXITY_API_KEY = import.meta.env.VITE_PERPLEXITY_API_KEY;
 
 const Profile = () => {
@@ -27,7 +31,7 @@ const Profile = () => {
   });
   const [editError, setEditError] = useState('');
   const [editSuccess, setEditSuccess] = useState(false);
-  const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'password', 'code'
+  const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'password', 'code', 'timetable'
 
   // Chat Assistant States
   const [chatOpen, setChatOpen] = useState(false);
@@ -41,12 +45,21 @@ const Profile = () => {
   const [codeResponse, setCodeResponse] = useState('');
   const [codeLoading, setCodeLoading] = useState(false);
 
+  // ---------- Admin Timetable States ----------
+  const [allEnrollments, setAllEnrollments] = useState([]);       // from /admin/enrollments
+  const [uniqueCourses, setUniqueCourses] = useState([]);         // de-duped courses from allEnrollments
+  const [courseUsersMap, setCourseUsersMap] = useState({});       // courseId -> Set(userIds)
+  const [scheduleInputs, setScheduleInputs] = useState({});       // {courseId: {date, time, duration}}
+  const [generating, setGenerating] = useState(false);
+  const [resolvedSchedules, setResolvedSchedules] = useState([]); // final per-day rows
+  const [unresolvedConflicts, setUnresolvedConflicts] = useState([]); // any conflicts we couldn't fix
+  const [topicsByCourse, setTopicsByCourse] = useState({});       // {courseId: [14 topics]}
+  // -------------------------------------------------------------
+
   // Fetch profile data, enrollments, and enrich progress
   useEffect(() => {
     const fetchProfileData = async () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL;
-        
         // Fetch user profile
         const profileRes = await fetch(`${API_URL}/users/profile`, {
           headers: { Authorization: `Bearer ${token}` }
@@ -64,7 +77,7 @@ const Profile = () => {
             confirmPassword: ''
           });
 
-          // Fetch enrollments for user
+          // Fetch enrollments for user (as original)
           const enrollmentsRes = await fetch(`${API_URL}/users/enrollments`, {
             headers: { Authorization: `Bearer ${token}` }
           });
@@ -96,6 +109,35 @@ const Profile = () => {
 
             setEnrollments(enrichedEnrollments);
           }
+
+          // If admin, fetch all enrollments (for timetable generation)
+          if (profileData.role === 'admin') {
+            const allRes = await fetch(`${API_URL}/admin/enrollments`, {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            if (allRes.ok) {
+              const allData = await allRes.json();
+              const all = allData?.data || [];
+              setAllEnrollments(all);
+
+              // Build unique courses + course->users map
+              const courseMap = {};
+              const cUsers = {};
+              all.forEach((en) => {
+                if (en?.course?._id) {
+                  courseMap[en.course._id] = en.course;
+                  if (!cUsers[en.course._id]) cUsers[en.course._id] = new Set();
+                  if (en?.user?._id) cUsers[en.course._id].add(en.user._id);
+                }
+              });
+              setUniqueCourses(Object.values(courseMap));
+              // Convert sets to arrays for state serialization safety
+              const plainMap = {};
+              Object.keys(cUsers).forEach(k => plainMap[k] = Array.from(cUsers[k]));
+              setCourseUsersMap(plainMap);
+            }
+          }
+
         } else {
           setError('Failed to load user profile');
         }
@@ -106,13 +148,12 @@ const Profile = () => {
       }
     };
 
-    if (token) fetchProfileData();    
+    if (token) fetchProfileData();
   }, [token]);
 
   // Fetch materials for a course and day as original
   const fetchCourseMaterials = async (courseId, day) => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL;
       const res = await fetch(`${API_URL}/courses/${courseId}/materials/${day}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -125,7 +166,7 @@ const Profile = () => {
     }
   };
 
-  // Handlers for edit form fields, profile submit, password submit - *unchanged* from original code
+  // Handlers for edit form fields, profile submit, password submit - unchanged
   const handleEditChange = (e) => {
     const { name, value } = e.target;
     setEditForm(prev => ({ ...prev, [name]: value }));
@@ -146,7 +187,6 @@ const Profile = () => {
       return;
     }
     try {
-      const API_URL = import.meta.env.VITE_API_URL;
       const res = await fetch(`${API_URL}/users/profile`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -185,7 +225,6 @@ const Profile = () => {
       return;
     }
     try {
-      const API_URL = import.meta.env.VITE_API_URL;
       const res = await fetch(`${API_URL}/users/password`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -204,120 +243,382 @@ const Profile = () => {
     }
   };
 
-  // Build user info context including enriched enrollments for Perplexity system prompt
-  const buildUserContext = () => {
-    if (!userData) return '';
-    return `
-User Profile:
-- Name: ${userData.name}
-- Email: ${userData.email}
-- Role: ${userData.role}
-Enrolled Courses:
-${enrollments.length === 0 ? 'None' : enrollments.map(e => `
-• Course: ${e.course.title}
-  Description: ${e.course.description}
-  Progress: ${e.progress ?? 0}%
-  Payment Status: ${e.paymentStatus}
-  Completed Days: ${e.completedDays?.filter(d => d.completed).length ?? 0} / ${e.completedDays?.length ?? 0}
-`).join('\n')}
-`.trim();
+  // ---------- Gemini helper (existing style) ----------
+  const askGeminiWithUserContext = async (message) => {
+    try {
+      const userContext = `
+        User Profile:
+        - Name: ${user?.name}
+        - Email: ${user?.email}
+        - Enrolled Courses: ${(user?.courses || []).map(c => c.title).join(", ") || "None"}
+      `;
+
+      const prompt = `
+        Context about the user:
+        ${userContext}
+
+        User's message:
+        ${message}
+
+        Answer based on the context when relevant.
+      `;
+
+      const response = await fetch(
+        "https://pocketmentor-backend.onrender.com/api/gemini/chat",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt }),
+        }
+      );
+
+      const data = await response.json();
+      const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
+      return reply;
+    } catch (err) {
+      console.error("Error in askGeminiWithUserContext:", err);
+      return "Something went wrong.";
+    }
   };
 
-  // Call Perplexity with user context prepended
- // ✅ gives profile + enrolled courses
+  // Generate 14 daily topics per course via Gemini (returns array of strings)
+  const generateTopicsForCourse = async (title, description) => {
+    try {
+      const prompt = `
+        You are helping plan an online course timetable.
+        Course Title: "${title}"
+        Description: "${description || 'N/A'}"
+        TASK: Return a strict JSON array of exactly 14 short topic strings (no numbering, no extra keys).
+        These represent daily class topics for a 2-week schedule.
+        EXAMPLE OUTPUT: ["Intro to X","Y Basics",... (total 14 items)]
+        IMPORTANT: Output MUST be pure JSON array only.
+      `;
 
-const askGeminiWithUserContext = async (message) => {
-  try {
-    // Build user context string
-    const userContext = `
-      User Profile:
-      - Name: ${user?.name}
-      - Email: ${user?.email}
-      - Enrolled Courses: ${(user?.courses || []).map(c => c.title).join(", ") || "None"}
-    `;
-
-    // Combine user context + actual user query
-    const prompt = `
-      Context about the user:
-      ${userContext}
-
-      User's message:
-      ${message}
-
-      Answer based on the context when relevant.
-    `;
-
-    const response = await fetch(
-      "https://pocketmentor-backend.onrender.com/api/gemini/chat",
-      {
+      // Using same Gemini endpoint style as rest of component
+      const response = await fetch(`${API_URL}/gemini/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt }),
+      });
+
+      const data = await response.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+
+      try {
+        const parsed = JSON.parse(text);
+        if (Array.isArray(parsed) && parsed.length === 14) return parsed;
+      } catch (_) {
+        // fallback attempt: split lines
       }
-    );
 
-    const data = await response.json();
-    // console.log("Gemini raw response:", data);
+      // Fallback: make 14 generic topics if parsing fails
+      return Array.from({ length: 14 }, (_, i) => `Day ${i + 1}: ${title} - Topic`);
+    } catch (e) {
+      console.error('generateTopicsForCourse error', e);
+      return Array.from({ length: 14 }, (_, i) => `Day ${i + 1}: ${title} - Topic`);
+    }
+  };
 
-    // Gemini returns candidates[0].content.parts[0].text
-    const reply =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
+  // ---------- Timetable helpers ----------
+  const toMinutes = (hhmm) => {
+    const [h, m] = (hhmm || '00:00').split(':').map(Number);
+    return h * 60 + (m || 0);
+  };
+  const minutesToHHMM = (mins) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${pad(h)}:${pad(m)}`;
+  };
+  const addDays = (dateStr, days) => {
+    const d = new Date(dateStr);
+    d.setDate(d.getDate() + days);
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  };
 
-    return reply;
-  } catch (err) {
-    console.error("Error in askGeminiWithUserContext:", err);
-    return "Something went wrong.";
-  }
-};
+  // Build initial 14-day schedule rows for selected courses
+  const buildBaseSchedules = () => {
+    const rows = [];
+    uniqueCourses.forEach((c) => {
+      const cfg = scheduleInputs[c._id];
+      if (!cfg?.date || !cfg?.time) return; // skip until admin sets both
+      const duration = Number(cfg.duration || 60);
+      for (let i = 0; i < 14; i++) {
+        const date = addDays(cfg.date, i);
+        rows.push({
+          courseId: c._id,
+          courseTitle: c.title,
+          date,
+          startHHMM: cfg.time,
+          durationMin: duration,
+          // these fields will be populated later
+          topic: '',
+        });
+      }
+    });
+    return rows;
+  };
 
+  // Detect conflicts between two sessions for same date if they share at least one user
+  const sessionsConflict = (a, b) => {
+    if (a.date !== b.date) return false;
+    // Check overlapping time ranges
+    const aStart = toMinutes(a.startHHMM);
+    const aEnd = aStart + a.durationMin;
+    const bStart = toMinutes(b.startHHMM);
+    const bEnd = bStart + b.durationMin;
+    const overlap = Math.max(0, Math.min(aEnd, bEnd) - Math.max(aStart, bStart)) > 0;
+    if (!overlap) return false;
 
+    // Check shared users (from courseUsersMap)
+    const usersA = new Set(courseUsersMap[a.courseId] || []);
+    const usersB = new Set(courseUsersMap[b.courseId] || []);
+    for (const u of usersA) {
+      if (usersB.has(u)) return true;
+    }
+    return false;
+  };
 
-  // Chat send handler
-const handleSendChat = async (e) => {
-  e.preventDefault();
-  if (!chatInput.trim()) return;
+  // Auto-resolve conflicts by shifting sessions to the next free slot on the same day
+  const autoResolveConflicts = (baseRows) => {
+    // Parameters for slotting (you can tweak these)
+    const dayStartMin = 8 * 60;   // 08:00
+    const dayEndMin = 21 * 60;    // 21:00
+    const stepMin = 60;           // 60-min granularity
+    const maxIterations = 5000;   // safety
 
-  // Add user message to history immediately
-  setChatHistory(h => [...h, { role: 'user', content: chatInput }]);
-  setChatLoading(true);
+    // Clone rows
+    const rows = baseRows.map(r => ({ ...r }));
 
-  // Flatten chat history into a string
-  const historyString = [...chatHistory, { role: 'user', content: chatInput }]
-    .map(m => `${m.role === 'user' ? "User" : "Assistant"}: ${m.content}`)
-    .join("\n");
+    // Build quick date -> rows index list
+    const byDate = {};
+    rows.forEach((r, idx) => {
+      if (!byDate[r.date]) byDate[r.date] = [];
+      byDate[r.date].push(idx);
+    });
 
-  const reply = await askGeminiWithUserContext(historyString);
+    let iterations = 0;
+    let remainingUnresolved = [];
 
-  // Append assistant reply
-  setChatHistory(h => [...h, { role: 'assistant', content: reply }]);
-  setChatInput('');
-  setChatLoading(false);
-};
+    Object.keys(byDate).forEach(date => {
+      const idxs = byDate[date];
 
+      // Repeat until no conflicts or we hit iteration cap
+      let changed = true;
+      let spins = 0;
+      while (changed && iterations < maxIterations) {
+        iterations++;
+        spins++;
+        changed = false;
 
-  // Code insights submit handler
+        // scan all pairs (n^2 is ok for per-day small sets)
+        for (let i = 0; i < idxs.length; i++) {
+          for (let j = i + 1; j < idxs.length; j++) {
+            const a = rows[idxs[i]];
+            const b = rows[idxs[j]];
+            if (sessionsConflict(a, b)) {
+              // try to move the "later" course forward first, else move b
+              let moved = false;
+              const tryShift = (rowIdx) => {
+                const row = rows[rowIdx];
+                const curStart = toMinutes(row.startHHMM);
+                let candidate = curStart + stepMin;
+                while (candidate + row.durationMin <= dayEndMin) {
+                  const test = { ...row, startHHMM: minutesToHHMM(candidate) };
+                  // check test against all same-date rows
+                  let ok = true;
+                  for (const k of idxs) {
+                    if (k === rowIdx) continue;
+                    const other = rows[k];
+                    const maybe = { ...test };
+                    if (sessionsConflict(maybe, other)) { ok = false; break; }
+                  }
+                  if (ok) {
+                    row.startHHMM = minutesToHHMM(candidate);
+                    moved = true;
+                    break;
+                  }
+                  candidate += stepMin;
+                }
+              };
+
+              // decide which to shift — keep the one that starts earlier pinned
+              const aStart = toMinutes(a.startHHMM);
+              const bStart = toMinutes(b.startHHMM);
+              if (aStart <= bStart) {
+                tryShift(idxs[j]);
+              } else {
+                tryShift(idxs[i]);
+              }
+
+              if (moved) { changed = true; }
+              else {
+                // If neither could move, try shifting backwards (earlier in day)
+                const tryShiftBack = (rowIdx) => {
+                  const row = rows[rowIdx];
+                  const curStart = toMinutes(row.startHHMM);
+                  let candidate = curStart - stepMin;
+                  while (candidate >= dayStartMin) {
+                    const test = { ...row, startHHMM: minutesToHHMM(candidate) };
+                    let ok = true;
+                    for (const k of idxs) {
+                      if (k === rowIdx) continue;
+                      const other = rows[k];
+                      if (sessionsConflict(test, other)) { ok = false; break; }
+                    }
+                    if (ok) {
+                      row.startHHMM = minutesToHHMM(candidate);
+                      return true;
+                    }
+                    candidate -= stepMin;
+                  }
+                  return false;
+                };
+
+                const movedBack = aStart <= bStart ? tryShiftBack(idxs[j]) : tryShiftBack(idxs[i]);
+                if (movedBack) changed = true;
+                // If still not moved, we'll leave this conflict unresolved for this date
+              }
+            }
+          }
+        }
+
+        if (spins > 200) break; // guard per-day
+      }
+
+      // After resolving attempt, collect any remaining unresolved pairs
+      for (let i = 0; i < idxs.length; i++) {
+        for (let j = i + 1; j < idxs.length; j++) {
+          const a = rows[idxs[i]];
+          const b = rows[idxs[j]];
+          if (sessionsConflict(a, b)) {
+            remainingUnresolved.push({ date, a, b });
+          }
+        }
+      }
+    });
+
+    return { rows, remainingUnresolved };
+  };
+
+  // Generate timetable: build base schedule -> auto-resolve -> get Gemini topics -> attach topics
+  const handleGenerateTimetable = async () => {
+    try {
+      setGenerating(true);
+      setResolvedSchedules([]);
+      setUnresolvedConflicts([]);
+      setTopicsByCourse({});
+
+      // Validate inputs
+      const missing = uniqueCourses.filter(c => !(scheduleInputs[c._id]?.date && scheduleInputs[c._id]?.time));
+      if (missing.length > 0) {
+        alert(`Please set Start Date & Time for: ${missing.map(m => m.title).join(', ')}`);
+        setGenerating(false);
+        return;
+      }
+
+      // 1) Base rows for 14 days
+      const baseRows = buildBaseSchedules();
+
+      // 2) Auto-resolve conflicts
+      const { rows: resolved, remainingUnresolved } = autoResolveConflicts(baseRows);
+
+      // 3) Generate topics per course via Gemini
+      const courseIds = uniqueCourses.map(c => c._id);
+      const topicsMap = {};
+      for (const cid of courseIds) {
+        const course = uniqueCourses.find(c => c._id === cid);
+        const topics = await generateTopicsForCourse(course?.title || 'Course', course?.description || '');
+        topicsMap[cid] = topics;
+      }
+
+      // 4) Attach topics to rows by day index (0..13) per course
+      const resultWithTopics = resolved.map(r => {
+        // compute day index from start date
+        const baseDate = scheduleInputs[r.courseId].date;
+        const dayIdx = Math.round((new Date(r.date) - new Date(baseDate)) / (1000 * 60 * 60 * 24));
+        const topics = topicsMap[r.courseId] || [];
+        const topic = topics[dayIdx] || `Day ${dayIdx + 1}: ${r.courseTitle} - Topic`;
+        return { ...r, topic };
+      });
+
+      setResolvedSchedules(resultWithTopics);
+      setUnresolvedConflicts(remainingUnresolved);
+      setTopicsByCourse(topicsMap);
+    } catch (e) {
+      console.error('handleGenerateTimetable error', e);
+      alert('Failed to generate timetable.');
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // Export to Excel (one sheet with all rows)
+  const exportToExcel = () => {
+    if (resolvedSchedules.length === 0) return;
+    const rows = resolvedSchedules
+      .sort((a, b) => (a.date + a.startHHMM).localeCompare(b.date + b.startHHMM))
+      .map(r => {
+        const startM = toMinutes(r.startHHMM);
+        const endHHMM = minutesToHHMM(startM + r.durationMin);
+        return {
+          Course: r.courseTitle,
+          Date: r.date,
+          'Start Time': r.startHHMM,
+          'End Time': endHHMM,
+          Topic: r.topic
+        };
+      });
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Timetable');
+    XLSX.writeFile(wb, 'timetable.xlsx');
+  };
+
+  // ---------- Chat send handler (unchanged) ----------
+  const handleSendChat = async (e) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+
+    setChatHistory(h => [...h, { role: 'user', content: chatInput }]);
+    setChatLoading(true);
+
+    const historyString = [...chatHistory, { role: 'user', content: chatInput }]
+      .map(m => `${m.role === 'user' ? "User" : "Assistant"}: ${m.content}`)
+      .join("\n");
+
+    const reply = await askGeminiWithUserContext(historyString);
+
+    setChatHistory(h => [...h, { role: 'assistant', content: reply }]);
+    setChatInput('');
+    setChatLoading(false);
+  };
+
+  // ---------- Code insights (unchanged) ----------
   const handleCodeInsights = async (e) => {
-  e.preventDefault();
-  setCodeResponse('');
-  setCodeLoading(true);
+    e.preventDefault();
+    setCodeResponse('');
+    setCodeLoading(true);
 
-  const prompt = `
-    You are an expert coding mentor. 
-    The user will give you a coding question and their code.
-    Please provide detailed feedback, point out mistakes, suggest improvements, 
-    and explain the solution.
+    const prompt = `
+      You are an expert coding mentor. 
+      The user will give you a coding question and their code.
+      Please provide detailed feedback, point out mistakes, suggest improvements, 
+      and explain the solution.
 
-    Question: ${questionInput}
-    Code:
-    ${codeInput}
-  `;
+      Question: ${questionInput}
+      Code:
+      ${codeInput}
+    `;
 
-  const feedback = await askGeminiWithUserContext(prompt);
-  setCodeResponse(feedback);
-  setCodeLoading(false);
-};
-
-
+    const feedback = await askGeminiWithUserContext(prompt);
+    setCodeResponse(feedback);
+    setCodeLoading(false);
+  };
 
   if (loading) {
     return (
@@ -385,6 +686,15 @@ const handleSendChat = async (e) => {
                 >
                   Code Insights
                 </button>
+
+                {userData.role === 'admin' && (
+                  <button
+                    onClick={() => setActiveTab('timetable')}
+                    className={`py-4 px-6 text-center border-b-2 font-medium text-sm ${activeTab === 'timetable' ? 'border-deep-blue text-deep-blue' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}
+                  >
+                    Timetable Generator
+                  </button>
+                )}
               </nav>
             </div>
 
@@ -635,6 +945,149 @@ const handleSendChat = async (e) => {
                   {codeLoading && <div className="my-4 text-gray-600">Analyzing your code...</div>}
                   {codeResponse && (
                     <div className="p-4 my-4 whitespace-pre-line rounded-lg bg-blue-50 text-deep-blue">{codeResponse}</div>
+                  )}
+                </div>
+              )}
+
+              {/* Admin: Timetable Generator */}
+              {activeTab === 'timetable' && userData.role === 'admin' && (
+                <div>
+                  <h2 className="mb-4 text-xl font-bold text-deep-blue">Timetable Generator (2 Weeks)</h2>
+
+                  {uniqueCourses.length === 0 ? (
+                    <div className="p-4 text-gray-600 rounded bg-gray-50">
+                      No enrollments available. Once students enroll, courses will appear here.
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-4">
+                        {uniqueCourses.map(course => (
+                          <div key={course._id} className="p-4 border rounded-lg">
+                            <div className="flex items-start justify-between">
+                              <div>
+                                <h3 className="font-semibold text-deep-blue">{course.title}</h3>
+                                <p className="text-sm text-gray-600">{course.description}</p>
+                                <div className="flex flex-wrap items-center gap-3 mt-3">
+                                  <label className="flex items-center gap-2">
+                                    <FaCalendarAlt className="text-gray-500" />
+                                    <input
+                                      type="date"
+                                      value={scheduleInputs[course._id]?.date || ''}
+                                      onChange={(e) =>
+                                        setScheduleInputs(p => ({ ...p, [course._id]: { ...p[course._id], date: e.target.value } }))
+                                      }
+                                      className="p-2 border rounded"
+                                    />
+                                  </label>
+                                  <label className="flex items-center gap-2">
+                                    <FaClock className="text-gray-500" />
+                                    <input
+                                      type="time"
+                                      value={scheduleInputs[course._id]?.time || ''}
+                                      onChange={(e) =>
+                                        setScheduleInputs(p => ({ ...p, [course._id]: { ...p[course._id], time: e.target.value } }))
+                                      }
+                                      className="p-2 border rounded"
+                                    />
+                                  </label>
+                                  <label className="flex items-center gap-2">
+                                    <span className="text-sm text-gray-600">Duration (min)</span>
+                                    <input
+                                      type="number"
+                                      min={30}
+                                      step={15}
+                                      value={scheduleInputs[course._id]?.duration || 60}
+                                      onChange={(e) =>
+                                        setScheduleInputs(p => ({ ...p, [course._id]: { ...p[course._id], duration: Number(e.target.value || 60) } }))
+                                      }
+                                      className="w-24 p-2 border rounded"
+                                    />
+                                  </label>
+                                </div>
+                                <div className="mt-2 text-xs text-gray-500">
+                                  Enrolled Users: {(courseUsersMap[course._id] || []).length}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex gap-4 mt-6">
+                        <button
+                          onClick={handleGenerateTimetable}
+                          disabled={generating}
+                          className="px-4 py-2 text-white rounded bg-deep-blue hover:bg-purple-blue"
+                        >
+                          {generating ? 'Generating...' : 'Auto-Resolve & Generate'}
+                        </button>
+
+                        {resolvedSchedules.length > 0 && (
+                          <button
+                            onClick={exportToExcel}
+                            className="flex items-center px-4 py-2 text-white bg-green-600 rounded hover:bg-green-700"
+                          >
+                            <FaDownload className="mr-2" /> Export Excel
+                          </button>
+                        )}
+                      </div>
+
+                      {unresolvedConflicts.length > 0 && (
+                        <div className="p-4 mt-6 text-yellow-800 border border-yellow-200 rounded bg-yellow-50">
+                          <div className="flex items-center gap-2 font-semibold">
+                            <FaExclamationTriangle /> Some conflicts could not be fully resolved:
+                          </div>
+                          <ul className="mt-2 ml-6 text-sm list-disc">
+                            {unresolvedConflicts.slice(0, 10).map((c, i) => (
+                              <li key={i}>
+                                {c.date}: {c.a.courseTitle} ({c.a.startHHMM}) ↔ {c.b.courseTitle} ({c.b.startHHMM})
+                              </li>
+                            ))}
+                            {unresolvedConflicts.length > 10 && <li>+ {unresolvedConflicts.length - 10} more…</li>}
+                          </ul>
+                          <div className="mt-2 text-xs">
+                            Tip: adjust one of the course base times above and generate again.
+                          </div>
+                        </div>
+                      )}
+
+                      {resolvedSchedules.length > 0 && (
+                        <div className="mt-8">
+                          <h3 className="mb-3 font-semibold text-deep-blue">Generated Timetable</h3>
+                          <div className="overflow-x-auto border rounded">
+                            <table className="min-w-full text-sm">
+                              <thead className="bg-gray-100">
+                                <tr>
+                                  <th className="px-3 py-2 text-left">Date</th>
+                                  <th className="px-3 py-2 text-left">Course</th>
+                                  <th className="px-3 py-2 text-left">Start</th>
+                                  <th className="px-3 py-2 text-left">End</th>
+                                  <th className="px-3 py-2 text-left">Topic</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {resolvedSchedules
+                                  .slice()
+                                  .sort((a, b) => (a.date + a.startHHMM + a.courseTitle).localeCompare(b.date + b.startHHMM + b.courseTitle))
+                                  .map((row, idx) => {
+                                    const startM = toMinutes(row.startHHMM);
+                                    const endHHMM = minutesToHHMM(startM + row.durationMin);
+                                    return (
+                                      <tr key={idx} className="border-t">
+                                        <td className="px-3 py-2">{row.date}</td>
+                                        <td className="px-3 py-2">{row.courseTitle}</td>
+                                        <td className="px-3 py-2">{row.startHHMM}</td>
+                                        <td className="px-3 py-2">{endHHMM}</td>
+                                        <td className="px-3 py-2">{row.topic}</td>
+                                      </tr>
+                                    );
+                                  })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}
