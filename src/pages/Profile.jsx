@@ -282,279 +282,256 @@ const Profile = () => {
   };
 
   // Generate 14 daily topics per course via Gemini (returns array of strings)
-  const generateTopicsForCourse = async (title, description) => {
+  // ---------- Topic generation ----------
+const generateTopicsForCourse = async (title, description) => {
+  try {
+    const prompt = `
+      You are helping plan an online course timetable.
+      Course Title: "${title}"
+      Description: "${description || 'N/A'}"
+      TASK: Return a strict JSON array of exactly 14 short topic strings (no numbering, no extra keys).
+      These represent daily class topics for a 2-week schedule.
+      EXAMPLE OUTPUT: ["Intro to X","Y Basics",... (total 14 items)]
+      IMPORTANT: Output MUST be pure JSON array only.
+    `;
+
+    const response = await fetch(`${API_URL}/gemini/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
+    });
+
+    const data = await response.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
+
     try {
-      const prompt = `
-        You are helping plan an online course timetable.
-        Course Title: "${title}"
-        Description: "${description || 'N/A'}"
-        TASK: Return a strict JSON array of exactly 14 short topic strings (no numbering, no extra keys).
-        These represent daily class topics for a 2-week schedule.
-        EXAMPLE OUTPUT: ["Intro to X","Y Basics",... (total 14 items)]
-        IMPORTANT: Output MUST be pure JSON array only.
-      `;
-
-      // Using same Gemini endpoint style as rest of component
-      const response = await fetch(`${API_URL}/gemini/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt }),
-      });
-
-      const data = await response.json();
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "[]";
-
-      try {
-        const parsed = JSON.parse(text);
-        if (Array.isArray(parsed) && parsed.length === 14) return parsed;
-      } catch (_) {
-        // fallback attempt: split lines
-      }
-
-      // Fallback: make 14 generic topics if parsing fails
-      return Array.from({ length: 14 }, (_, i) => `Day ${i + 1}: ${title} - Topic`);
-    } catch (e) {
-      console.error('generateTopicsForCourse error', e);
-      return Array.from({ length: 14 }, (_, i) => `Day ${i + 1}: ${title} - Topic`);
+      const parsed = JSON.parse(text);
+      if (Array.isArray(parsed) && parsed.length === 14) return parsed;
+    } catch (_) {
+      
     }
-  };
 
-  // ---------- Timetable helpers ----------
-  const toMinutes = (hhmm) => {
-    const [h, m] = (hhmm || '00:00').split(':').map(Number);
-    return h * 60 + (m || 0);
-  };
-  const minutesToHHMM = (mins) => {
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    const pad = (n) => String(n).padStart(2, '0');
-    return `${pad(h)}:${pad(m)}`;
-  };
-  const addDays = (dateStr, days) => {
-    const d = new Date(dateStr);
-    d.setDate(d.getDate() + days);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  };
+    return Array.from({ length: 14 }, (_, i) => `Day ${i + 1}: ${title} - Topic`);
+  } catch (e) {
+    console.error("generateTopicsForCourse error", e);
+    return Array.from({ length: 14 }, (_, i) => `Day ${i + 1}: ${title} - Topic`);
+  }
+};
 
-  // Build initial 14-day schedule rows for selected courses
-  const buildBaseSchedules = () => {
-    const rows = [];
-    uniqueCourses.forEach((c) => {
-      const cfg = scheduleInputs[c._id];
-      if (!cfg?.date || !cfg?.time) return; // skip until admin sets both
-      const duration = Number(cfg.duration || 60);
-      for (let i = 0; i < 14; i++) {
-        const date = addDays(cfg.date, i);
-        rows.push({
-          courseId: c._id,
-          courseTitle: c.title,
-          date,
-          startHHMM: cfg.time,
-          durationMin: duration,
-          // these fields will be populated later
-          topic: '',
-        });
-      }
-    });
-    return rows;
-  };
+// ---------- Helpers ----------
+const toMinutes = (hhmm) => {
+  const [h, m] = (hhmm || "00:00").split(":").map(Number);
+  return h * 60 + (m || 0);
+};
+const minutesToHHMM = (mins) => {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${pad(h)}:${pad(m)}`;
+};
+const addDays = (dateStr, days) => {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  return d.toISOString().split("T")[0];
+};
 
-  // Detect conflicts between two sessions for same date if they share at least one user
-  const sessionsConflict = (a, b) => {
-    if (a.date !== b.date) return false;
-    // Check overlapping time ranges
-    const aStart = toMinutes(a.startHHMM);
-    const aEnd = aStart + a.durationMin;
-    const bStart = toMinutes(b.startHHMM);
-    const bEnd = bStart + b.durationMin;
-    const overlap = Math.max(0, Math.min(aEnd, bEnd) - Math.max(aStart, bStart)) > 0;
-    if (!overlap) return false;
+// ---------- Conflict detection ----------
+const sessionsConflict = (a, b) => {
+  if (a.date !== b.date) return false;
 
-    // Check shared users (from courseUsersMap)
-    const usersA = new Set(courseUsersMap[a.courseId] || []);
-    const usersB = new Set(courseUsersMap[b.courseId] || []);
-    for (const u of usersA) {
-      if (usersB.has(u)) return true;
-    }
-    return false;
-  };
+  const aStart = toMinutes(a.startHHMM);
+  const aEnd = aStart + a.durationMin;
+  const bStart = toMinutes(b.startHHMM);
+  const bEnd = bStart + b.durationMin;
 
-  // Auto-resolve conflicts by shifting sessions to the next free slot on the same day
-  const autoResolveConflicts = (baseRows) => {
-    // Parameters for slotting (you can tweak these)
-    const dayStartMin = 8 * 60;   // 08:00
-    const dayEndMin = 21 * 60;    // 21:00
-    const stepMin = 60;           // 60-min granularity
-    const maxIterations = 5000;   // safety
+  const overlap = Math.max(0, Math.min(aEnd, bEnd) - Math.max(aStart, bStart)) > 0;
+  if (!overlap) return false;
 
-    // Clone rows
-    const rows = baseRows.map(r => ({ ...r }));
+  // Shared users
+  const usersA = new Set(courseUsersMap[a.courseId] || []);
+  const usersB = new Set(courseUsersMap[b.courseId] || []);
+  for (const u of usersA) {
+    if (usersB.has(u)) return true;
+  }
+  return false;
+};
 
-    // Build quick date -> rows index list
-    const byDate = {};
-    rows.forEach((r, idx) => {
-      if (!byDate[r.date]) byDate[r.date] = [];
-      byDate[r.date].push(idx);
-    });
+// ---------- Auto-resolve by shifting sessions ----------
+const autoResolveConflicts = (baseRows) => {
+  const dayStartMin = 8 * 60;
+  const dayEndMin = 21 * 60;
+  const stepMin = 30; // finer granularity
+  const rows = baseRows.map((r) => ({ ...r }));
+  const byDate = {};
+  rows.forEach((r, idx) => {
+    if (!byDate[r.date]) byDate[r.date] = [];
+    byDate[r.date].push(idx);
+  });
 
-    let iterations = 0;
-    let remainingUnresolved = [];
+  const remainingUnresolved = [];
 
-    Object.keys(byDate).forEach(date => {
-      const idxs = byDate[date];
-
-      // Repeat until no conflicts or we hit iteration cap
-      let changed = true;
-      let spins = 0;
-      while (changed && iterations < maxIterations) {
-        iterations++;
-        spins++;
-        changed = false;
-
-        // scan all pairs (n^2 is ok for per-day small sets)
-        for (let i = 0; i < idxs.length; i++) {
-          for (let j = i + 1; j < idxs.length; j++) {
-            const a = rows[idxs[i]];
-            const b = rows[idxs[j]];
-            if (sessionsConflict(a, b)) {
-              // try to move the "later" course forward first, else move b
-              let moved = false;
-              const tryShift = (rowIdx) => {
-                const row = rows[rowIdx];
-                const curStart = toMinutes(row.startHHMM);
-                let candidate = curStart + stepMin;
-                while (candidate + row.durationMin <= dayEndMin) {
-                  const test = { ...row, startHHMM: minutesToHHMM(candidate) };
-                  // check test against all same-date rows
-                  let ok = true;
-                  for (const k of idxs) {
-                    if (k === rowIdx) continue;
-                    const other = rows[k];
-                    const maybe = { ...test };
-                    if (sessionsConflict(maybe, other)) { ok = false; break; }
-                  }
-                  if (ok) {
-                    row.startHHMM = minutesToHHMM(candidate);
-                    moved = true;
-                    break;
-                  }
-                  candidate += stepMin;
-                }
-              };
-
-              // decide which to shift — keep the one that starts earlier pinned
-              const aStart = toMinutes(a.startHHMM);
-              const bStart = toMinutes(b.startHHMM);
-              if (aStart <= bStart) {
-                tryShift(idxs[j]);
-              } else {
-                tryShift(idxs[i]);
-              }
-
-              if (moved) { changed = true; }
-              else {
-                // If neither could move, try shifting backwards (earlier in day)
-                const tryShiftBack = (rowIdx) => {
-                  const row = rows[rowIdx];
-                  const curStart = toMinutes(row.startHHMM);
-                  let candidate = curStart - stepMin;
-                  while (candidate >= dayStartMin) {
-                    const test = { ...row, startHHMM: minutesToHHMM(candidate) };
-                    let ok = true;
-                    for (const k of idxs) {
-                      if (k === rowIdx) continue;
-                      const other = rows[k];
-                      if (sessionsConflict(test, other)) { ok = false; break; }
-                    }
-                    if (ok) {
-                      row.startHHMM = minutesToHHMM(candidate);
-                      return true;
-                    }
-                    candidate -= stepMin;
-                  }
-                  return false;
-                };
-
-                const movedBack = aStart <= bStart ? tryShiftBack(idxs[j]) : tryShiftBack(idxs[i]);
-                if (movedBack) changed = true;
-                // If still not moved, we'll leave this conflict unresolved for this date
-              }
-            }
-          }
-        }
-
-        if (spins > 200) break; // guard per-day
-      }
-
-      // After resolving attempt, collect any remaining unresolved pairs
+  Object.keys(byDate).forEach((date) => {
+    const idxs = byDate[date];
+    let changed = true;
+    while (changed) {
+      changed = false;
       for (let i = 0; i < idxs.length; i++) {
         for (let j = i + 1; j < idxs.length; j++) {
           const a = rows[idxs[i]];
           const b = rows[idxs[j]];
           if (sessionsConflict(a, b)) {
-            remainingUnresolved.push({ date, a, b });
+            let moved = false;
+            const tryShift = (rowIdx) => {
+              const row = rows[rowIdx];
+              let candidate = toMinutes(row.startHHMM) + stepMin;
+              while (candidate + row.durationMin <= dayEndMin) {
+                const test = { ...row, startHHMM: minutesToHHMM(candidate) };
+                if (!rows.some((other, k) => k !== rowIdx && sessionsConflict(test, other))) {
+                  row.startHHMM = minutesToHHMM(candidate);
+                  moved = true;
+                  break;
+                }
+                candidate += stepMin;
+              }
+            };
+            const aStart = toMinutes(a.startHHMM);
+            const bStart = toMinutes(b.startHHMM);
+            if (aStart <= bStart) tryShift(idxs[j]);
+            else tryShift(idxs[i]);
+            if (!moved) {
+              remainingUnresolved.push({ date, a, b });
+            } else {
+              changed = true;
+            }
           }
         }
       }
+    }
+  });
+
+  return { rows, remainingUnresolved };
+};
+
+// ---------- Main function ----------
+const handleGenerateTimetable = async () => {
+  try {
+    setGenerating(true);
+    setResolvedSchedules([]);
+    setUnresolvedConflicts([]);
+    setTopicsByCourse({});
+
+    // Validate
+    const missing = uniqueCourses.filter(
+      (c) => !(scheduleInputs[c._id]?.date && scheduleInputs[c._id]?.time)
+    );
+    if (missing.length > 0) {
+      alert(`Please set Start Date & Time for: ${missing.map((m) => m.title).join(", ")}`);
+      setGenerating(false);
+      return;
+    }
+
+    // Base schedules
+    const baseRows = [];
+    uniqueCourses.forEach((c) => {
+      const cfg = scheduleInputs[c._id];
+      const duration = Number(cfg.duration || 60);
+      for (let i = 0; i < 14; i++) {
+        const date = addDays(cfg.date, i);
+        baseRows.push({
+          courseId: c._id,
+          courseTitle: c.title,
+          date,
+          startHHMM: cfg.time,
+          durationMin: duration,
+          topic: "",
+        });
+      }
     });
 
-    return { rows, remainingUnresolved };
-  };
+    // Resolve conflicts
+    const { rows: resolved, remainingUnresolved } = autoResolveConflicts(baseRows);
 
-  // Generate timetable: build base schedule -> auto-resolve -> get Gemini topics -> attach topics
-  const handleGenerateTimetable = async () => {
-    try {
-      setGenerating(true);
-      setResolvedSchedules([]);
-      setUnresolvedConflicts([]);
-      setTopicsByCourse({});
+    // Build groups (conflict-aware)
+    const conflictMap = {};
+    uniqueCourses.forEach((c) => (conflictMap[c._id] = new Set()));
+    remainingUnresolved.forEach(({ a, b }) => {
+      conflictMap[a.courseId].add(b.courseId);
+      conflictMap[b.courseId].add(a.courseId);
+    });
 
-      // Validate inputs
-      const missing = uniqueCourses.filter(c => !(scheduleInputs[c._id]?.date && scheduleInputs[c._id]?.time));
-      if (missing.length > 0) {
-        alert(`Please set Start Date & Time for: ${missing.map(m => m.title).join(', ')}`);
-        setGenerating(false);
-        return;
+    const groups = [];
+    for (const course of uniqueCourses) {
+      let placed = false;
+      for (const g of groups) {
+        if (!g.some((c) => conflictMap[c._id]?.has(course._id))) {
+          g.push(course);
+          placed = true;
+          break;
+        }
       }
+      if (!placed) groups.push([course]);
+    }
+    if (groups.length === 1) {
+      const half = Math.ceil(uniqueCourses.length / 2);
+      groups.length = 0;
+      groups.push(uniqueCourses.slice(0, half));
+      groups.push(uniqueCourses.slice(half));
+    }
 
-      // 1) Base rows for 14 days
-      const baseRows = buildBaseSchedules();
+    // Topics
+    const topicsMap = {};
+    for (const course of uniqueCourses) {
+      topicsMap[course._id] = await generateTopicsForCourse(course.title, course.description || "");
+    }
 
-      // 2) Auto-resolve conflicts
-      const { rows: resolved, remainingUnresolved } = autoResolveConflicts(baseRows);
+    // Build 14-day schedule
+    let allSchedules = [];
+    const startDateStr = scheduleInputs[uniqueCourses[0]._id].date;
+    let currentDate = new Date(startDateStr);
 
-      // 3) Generate topics per course via Gemini
-      const courseIds = uniqueCourses.map(c => c._id);
-      const topicsMap = {};
-      for (const cid of courseIds) {
-        const course = uniqueCourses.find(c => c._id === cid);
-        const topics = await generateTopicsForCourse(course?.title || 'Course', course?.description || '');
-        topicsMap[cid] = topics;
-      }
+    for (let d = 0; d < 14; d++) {
+      const dayDate = new Date(currentDate);
+      const isSunday = dayDate.getDay() === 0;
 
-      // 4) Attach topics to rows by day index (0..13) per course
-      const resultWithTopics = resolved.map(r => {
-        // compute day index from start date
-        const baseDate = scheduleInputs[r.courseId].date;
-        const dayIdx = Math.round((new Date(r.date) - new Date(baseDate)) / (1000 * 60 * 60 * 24));
-        const topics = topicsMap[r.courseId] || [];
-        const topic = topics[dayIdx] || `Day ${dayIdx + 1}: ${r.courseTitle} - Topic`;
-        return { ...r, topic };
+      const todayCourses = isSunday ? uniqueCourses : groups[d % groups.length];
+      const daySessions = todayCourses.map((course) => {
+        const cfg = scheduleInputs[course._id];
+        return {
+          courseId: course._id,
+          courseTitle: course.title,
+          date: dayDate.toISOString().split("T")[0],
+          startHHMM: cfg.time,
+          durationMin: Number(cfg.duration || 60),
+        };
       });
 
-      setResolvedSchedules(resultWithTopics);
-      setUnresolvedConflicts(remainingUnresolved);
-      setTopicsByCourse(topicsMap);
-    } catch (e) {
-      console.error('handleGenerateTimetable error', e);
-      alert('Failed to generate timetable.');
-    } finally {
-      setGenerating(false);
+      // resolve conflicts within this day
+      const { rows: resolvedDay } = autoResolveConflicts(daySessions);
+
+      resolvedDay.forEach((s) => {
+        const topics = topicsMap[s.courseId] || [];
+        const topic = topics[d] || `Day ${d + 1}: ${s.courseTitle} - Topic`;
+        allSchedules.push({
+          ...s,
+          topic,
+        });
+      });
+
+      currentDate.setDate(currentDate.getDate() + 1);
     }
-  };
+
+    setResolvedSchedules(allSchedules);
+    setUnresolvedConflicts(remainingUnresolved);
+    setTopicsByCourse(topicsMap);
+  } catch (e) {
+    console.error("handleGenerateTimetable error", e);
+    alert("Failed to generate timetable.");
+  } finally {
+    setGenerating(false);
+  }
+};
+
+
 
   // Export to Excel (one sheet with all rows)
   const exportToExcel = () => {

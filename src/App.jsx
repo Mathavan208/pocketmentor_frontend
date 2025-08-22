@@ -22,7 +22,8 @@ import AdminWorkshops from './pages/AdminWorkshops';
 import AdminInstructors from './pages/AdminInstructors';
 import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute';
-
+import QuestionMaker from "./pages/QuestionMaker";
+import AdminCertificationCreator from "./pages/AdminCertificationCreator";
 function App() {
   return (
     <UserProvider>
@@ -50,6 +51,16 @@ function App() {
               <Route path="/admin" element={
                 <AdminRoute>
                   <AdminDashboard />
+                </AdminRoute>
+              } />
+              <Route path="/admin/question-maker" element={
+                <AdminRoute>
+                  <QuestionMaker />
+                </AdminRoute>
+              } />
+               <Route path="/admin/certifications" element={
+                <AdminRoute>
+                  <AdminCertificationCreator />
                 </AdminRoute>
               } />
               <Route path="/admin/courses" element={
