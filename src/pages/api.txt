@@ -1,0 +1,29 @@
+curl https://api.perplexity.ai/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "sonar",
+    "messages": [
+      {
+        "role": "user", 
+        "content": "What are the most promising machine learning breakthroughs in computer vision and multimodal AI from recent arXiv publications?"
+      }
+    ],
+    "search_domain_filter": ["arxiv.org"],
+    "search_recency_filter": "month"
+  }' | jq
+
+
+  curl https://api.perplexity.ai/chat/completions \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "sonar",
+    "messages": [
+      {
+        "role": "user", 
+        "content": "What are the latest peer-reviewed findings on CRISPR gene editing applications in treating genetic disorders?"
+      }
+    ],
+    "search_filter": "academic"
+  }' | jq
