@@ -88,88 +88,114 @@ const AdminCertificationCreator = () => {
   };
 
   const generateCertificate = async (enrollment) => {
-    const { user, course } = enrollment;
-    const theme = await fetchGeminiTheme(course?.title || "Course");
+  const { user, course } = enrollment;
+  const theme = await fetchGeminiTheme(course?.title || "Course");
 
-    const doc = new jsPDF("landscape", "pt", "a4");
+  const doc = new jsPDF("landscape", "pt", "a4");
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
 
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
+  // 🔹 Background
+  doc.setFillColor(...theme.bgColor);
+  doc.rect(0, 0, pageWidth, pageHeight, "F");
 
-    // 🔹 Gemini background
-    doc.setFillColor(...theme.bgColor);
-    doc.rect(0, 0, pageWidth, pageHeight, "F");
+  // 🔹 Border
+  doc.setDrawColor(...theme.borderColor);
+  doc.setLineWidth(8);
+  doc.rect(20, 20, pageWidth - 40, pageHeight - 40);
 
-    // 🔹 Gemini border
-    doc.setDrawColor(...theme.borderColor);
-    doc.setLineWidth(8);
-    doc.rect(20, 20, pageWidth - 40, pageHeight - 40);
+  // Logo
+  const logoUrl = "https://i.postimg.cc/LsSXKJjf/logo.jpg";
+  const img = await fetch(logoUrl).then((res) => res.blob());
+  const reader = new FileReader();
+  reader.readAsDataURL(img);
 
-    // Logo
-    const logoUrl = "https://i.postimg.cc/LsSXKJjf/logo.jpg";
-    const img = await fetch(logoUrl).then((res) => res.blob());
-    const reader = new FileReader();
-    reader.readAsDataURL(img);
+  reader.onloadend = async function () {
+    const base64data = reader.result;
+    doc.addImage(base64data, "JPEG", 50, 40, 100, 100);
 
-    reader.onloadend = function () {
-      const base64data = reader.result;
-      doc.addImage(base64data, "JPEG", 50, 40, 100, 100);
+    // Title
+    doc.setFont("times", "bold");
+    doc.setFontSize(40);
+    doc.setTextColor(...theme.titleColor);
+    doc.text("Certificate of Completion", pageWidth / 2, 120, { align: "center" });
 
-      // Title
-      doc.setFont("times", "bold");
-      doc.setFontSize(40);
-      doc.setTextColor(...theme.titleColor);
-      doc.text("Certificate of Completion", pageWidth / 2, 120, { align: "center" });
+    // Recipient
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(20);
+    doc.setTextColor(80, 80, 80);
+    doc.text("This certificate is proudly presented to", pageWidth / 2, 170, { align: "center" });
 
-      // Recipient
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(20);
-      doc.setTextColor(80, 80, 80);
-      doc.text("This certificate is proudly presented to", pageWidth / 2, 170, { align: "center" });
+    doc.setFont("courier", "bold");
+    doc.setFontSize(30);
+    doc.setTextColor(30, 41, 59);
+    doc.text(user?.name || "Student Name", pageWidth / 2, 220, { align: "center" });
 
-      doc.setFont("courier", "bold");
-      doc.setFontSize(30);
-      doc.setTextColor(30, 41, 59);
-      doc.text(user?.name || "Student Name", pageWidth / 2, 220, { align: "center" });
+    // Course name
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(18);
+    doc.setTextColor(60, 60, 60);
+    doc.text("for successfully completing the course", pageWidth / 2, 270, { align: "center" });
 
-      // Course name
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(18);
-      doc.setTextColor(60, 60, 60);
-      doc.text("for successfully completing the course", pageWidth / 2, 270, { align: "center" });
+    doc.setFont("times", "bold");
+    doc.setFontSize(26);
+    doc.setTextColor(...theme.borderColor);
+    doc.text(course?.title || "Course Title", pageWidth / 2, 320, { align: "center" });
 
-      doc.setFont("times", "bold");
-      doc.setFontSize(26);
-      doc.setTextColor(...theme.borderColor);
-      doc.text(course?.title || "Course Title", pageWidth / 2, 320, { align: "center" });
+    // Issue Date
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(14);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Issued on ${new Date().toLocaleDateString()}`, pageWidth / 2, 360, { align: "center" });
 
-      // Issue Date
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(14);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Issued on ${new Date().toLocaleDateString()}`, pageWidth / 2, 360, { align: "center" });
+    // 🔹 Instructor signatures
+    const instructors = getInstructors(course?.title);
+    let startX = 150;
+    const gap = (pageWidth - 300) / (instructors.length - 1 || 1);
 
-      // 🔹 Instructor signatures (now mapped properly)
-      const instructors = getInstructors(course?.title);
-      let startX = 150;
-      const gap = (pageWidth - 300) / (instructors.length - 1 || 1);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(30, 58, 138);
 
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(16);
-      doc.setTextColor(30, 58, 138);
+    instructors.forEach((inst, i) => {
+      const x = startX + i * gap;
+      doc.line(x - 80, 400, x + 80, 400); // signature line
+      doc.text(inst, x, 430, { align: "center" });
+      doc.setFontSize(12);
+      doc.text("Course Instructor", x, 450, { align: "center" });
+    });
 
-      instructors.forEach((inst, i) => {
-        const x = startX + i * gap;
-        doc.line(x - 80, 400, x + 80, 400); // signature line
-        doc.text(inst, x, 430, { align: "center" });
-        doc.setFontSize(12);
-        doc.text("Course Instructor", x, 450, { align: "center" });
-      });
+    // 🔹 Download PDF
+    doc.save(`Certificate_${user?.name || "student"}_${course?.title || "course"}.pdf`);
 
-      // Download
-      doc.save(`Certificate_${user?.name || "student"}_${course?.title || "course"}.pdf`);
+    // 🔹 Send PDF via email
+    const pdfBase64 = doc.output("datauristring");
+
+    const sendCertificateEmail = async (email, pdfBase64, filename) => {
+      try {
+        const API_URL = import.meta.env.VITE_API_URL;
+        const res = await fetch(`${API_URL}/send-certificate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, pdfBase64, filename }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert(`Certificate sent to ${email}`);
+        } else {
+          alert("Failed to send email");
+        }
+      } catch (err) {
+        console.error("Email send error:", err);
+        alert("Error sending certificate email");
+      }
     };
+
+    if (user?.email) {
+      await sendCertificateEmail(user.email, pdfBase64, `Certificate_${user?.name}_${course?.title}.pdf`);
+    }
   };
+};
 
   if (loading) {
     return <p className="py-8 text-center text-gray-600">Loading enrollments...</p>;
