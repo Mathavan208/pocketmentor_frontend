@@ -13,7 +13,8 @@ const AdminCourses = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const response = await fetch('/api/courses', {
+        const API_URL=import.meta.env.VITE_API_URL;
+        const response = await fetch(`${API_URL}/courses`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -39,7 +40,8 @@ const AdminCourses = () => {
   const deleteCourse = async (id) => {
     if (window.confirm('Are you sure you want to delete this course?')) {
       try {
-        const response = await fetch(`/api/courses/${id}`, {
+         const API_URL=import.meta.env.VITE_API_URL;
+        const response = await fetch(`${API_URL}/courses/${id}`, {
           method: 'DELETE',
           headers: {
             'Authorization': `Bearer ${token}`
