@@ -24,6 +24,7 @@ import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute';
 import QuestionMaker from "./pages/QuestionMaker";
 import AdminCertificationCreator from "./pages/AdminCertificationCreator";
+import BulkEmailSender from './pages/BulkEmailSender';
 function App() {
   return (
     <UserProvider>
@@ -41,7 +42,13 @@ function App() {
               <Route path="/contact" element={<Contact />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
-              
+             <Route path="/admin/enrollments/bulk-mail" element={
+  <AdminRoute>
+    <BulkEmailSender />
+  </AdminRoute>
+} />
+
+
               <Route path="/profile" element={
                 <PrivateRoute>
                   <Profile />
