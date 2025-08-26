@@ -8,6 +8,8 @@ const AdminEnrollments = () => {
   const [selectedEnrollment, setSelectedEnrollment] = useState(null);
   const [selectedDay, setSelectedDay] = useState(1);
   const [materials, setMaterials] = useState([]);
+  const [customPrompt, setCustomPrompt] = useState("");
+
   const [newMaterial, setNewMaterial] = useState({
     title: '',
     description: '',
@@ -51,6 +53,100 @@ const AdminEnrollments = () => {
     
     fetchEnrollments();
   }, []);
+// Add inside AdminEnrollments component
+const [showEmailModal, setShowEmailModal] = useState(false);
+const [emailData, setEmailData] = useState({
+  subject: "",
+  body: "",
+  meetLink: "",
+});
+const [attachments, setAttachments] = useState([]);
+const [emailLoading, setEmailLoading] = useState(false);
+
+// Handle input changes
+const handleEmailChange = (e) => {
+  const { name, value } = e.target;
+  setEmailData(prev => ({ ...prev, [name]: value }));
+};
+
+// Handle file upload
+const handleFileChange = (e) => {
+  setAttachments([...e.target.files]);
+};
+
+// Generate email body with Gemini API
+// Generate email body with Gemini API
+const generateEmailBody = async () => {
+  if (!selectedEnrollment) return;
+  try {
+    const API_URL = import.meta.env.VITE_API_URL;
+
+    const studentName = selectedEnrollment.user?.name || "Student";
+    const courseTitle = selectedEnrollment.course?.title || "your course";
+
+    const prompt = `
+      Write a professional but friendly email body (ONLY the body text, no subject line).
+      The email is from PocketMentor to a student.
+      Address the student by name: ${studentName}.
+      Mention their enrollment in the course "${courseTitle}".
+      Do not include subject lines or signatures.
+
+      Additional style instructions from admin:
+      ${customPrompt || "No extra style instructions provided."}
+    `;
+
+    const response = await fetch(`${API_URL}/gemini/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt }),
+    });
+
+    const data = await response.json();
+
+    setEmailData(prev => ({
+      ...prev,
+      body: data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response",
+    }));
+  } catch (err) {
+    console.error("Gemini email generation failed:", err);
+  }
+};
+
+
+// Send email
+const sendEmail = async () => {
+  if (!selectedEnrollment) return;
+  setEmailLoading(true);
+  try {
+    const token = localStorage.getItem("token");
+    const API_URL = import.meta.env.VITE_API_URL;
+
+    const formData = new FormData();
+     formData.append("to", selectedEnrollment.user.email); 
+    formData.append("subject", emailData.subject);
+    formData.append("body", emailData.body);
+    formData.append("meetLink", emailData.meetLink);
+    attachments.forEach(file => formData.append("attachments", file));
+
+    const response = await fetch(`${API_URL}/send-email`, {
+      method: "POST",
+      body: formData,
+    });
+
+    if (response.ok) {
+      alert("Email sent successfully!");
+      setShowEmailModal(false);
+      setEmailData({ subject: "", body: "", meetLink: "" });
+      setAttachments([]);
+    } else {
+      alert("Failed to send email");
+    }
+  } catch (err) {
+    console.error("Email send error:", err);
+  } finally {
+    setEmailLoading(false);
+  }
+};
 
   const fetchCourseDetails = async (courseId, enrollment) => {
     try {
@@ -498,6 +594,16 @@ const AdminEnrollments = () => {
                           >
                             <FaTrash className="inline" />
                           </button>
+                          <button
+  onClick={() => {
+    setSelectedEnrollment(enrollment);
+    setShowEmailModal(true);
+  }}
+  className="px-3 py-1 text-xs text-blue-700 bg-blue-100 rounded hover:bg-blue-200"
+>
+  Send Email
+</button>
+
                         </div>
                       </td>
                     </tr>
@@ -726,6 +832,75 @@ const AdminEnrollments = () => {
           </div>
         </div>
       )}
+      {showEmailModal && selectedEnrollment && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+    <div className="w-full max-w-3xl p-6 bg-white shadow-xl rounded-xl">
+      <h2 className="mb-4 text-xl font-bold text-deep-blue">
+        Send Email to {selectedEnrollment.user.email}
+      </h2>
+
+      <div className="space-y-4">
+        <input
+          type="text"
+          name="subject"
+          placeholder="Email Subject"
+          value={emailData.subject}
+          onChange={handleEmailChange}
+          className="w-full px-3 py-2 border rounded-md"
+        />
+
+       <textarea
+  placeholder="Enter extra instructions for Gemini (e.g., motivational, formal)..."
+  value={customPrompt}
+  onChange={(e) => setCustomPrompt(e.target.value)}
+  className="w-full p-2 mb-2 border rounded"
+/>
+
+
+        <button
+  type="button"
+  onClick={generateEmailBody}
+  className="px-3 py-2 text-sm text-white bg-green-600 rounded hover:bg-green-700"
+>
+  Generate with Gemini
+</button>
+
+        <input
+          type="url"
+          name="meetLink"
+          placeholder="Optional Meet Link"
+          value={emailData.meetLink}
+          onChange={handleEmailChange}
+          className="w-full px-3 py-2 border rounded-md"
+        />
+
+        <input
+          type="file"
+          multiple
+          onChange={handleFileChange}
+          className="w-full"
+        />
+      </div>
+
+      <div className="flex justify-end mt-6 space-x-2">
+        <button
+          onClick={() => setShowEmailModal(false)}
+          className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={sendEmail}
+          disabled={emailLoading}
+          className="px-4 py-2 text-white bg-blue-600 rounded hover:bg-blue-700"
+        >
+          {emailLoading ? "Sending..." : "Send Email"}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 };
