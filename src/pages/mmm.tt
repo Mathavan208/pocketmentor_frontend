@@ -1,0 +1,132 @@
+// Add state for selected day in materials modal
+const [selectedDay, setSelectedDay] = useState(1);
+
+// Update the fetchCourseMaterials function to use the selected day
+const fetchCourseMaterials = async (courseId, day) => {
+  try {
+    // Fetch materials for the specific day
+    const res = await fetch(`${API_URL}/courses/${courseId}/materials/${day}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      // Format the data to match the expected structure for the modal
+      const materialsArray = [{ day: day, materials: data.data }];
+      setMaterials(materialsArray);
+    }
+  } catch (err) {
+    console.error('Failed to fetch course materials:', err);
+  }
+};
+
+// Update the enrollment card to pass the day parameter
+<button
+  onClick={() => {
+    setSelectedEnrollment(enrollment);
+    setSelectedDay(1); // Reset to day 1 when opening modal
+    fetchCourseMaterials(enrollment.course._id, 1);
+  }}
+  className="mt-2 text-sm text-blue-600 hover:underline"
+>
+  View Materials
+</button>
+
+// Update the materials modal with day selector
+{selectedEnrollment && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
+    <div className="w-full max-w-3xl bg-white shadow-xl rounded-xl">
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-deep-blue">Course Materials for {selectedEnrollment.course.title}</h2>
+          <button onClick={() => setSelectedEnrollment(null)} className="text-gray-500 hover:text-gray-700">
+            <FaTimes className="text-xl" />
+          </button>
+        </div>
+        <div className="mb-6">
+          <h3 className="mb-4 text-lg font-semibold text-deep-blue">Course Progress</h3>
+          <div className="flex items-center mb-4">
+            <div className="w-full bg-gray-200 rounded-full h-2.5 mr-2">
+              <div className="bg-green-600 h-2.5 rounded-full" style={{ width: `${selectedEnrollment.progress ?? 0}%` }}></div>
+            </div>
+            <span className="text-sm font-medium text-gray-700">{selectedEnrollment.progress ?? 0}%</span>
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {(selectedEnrollment.completedDays ?? []).map((day, idx) => (
+              <span
+                key={idx}
+                className={`w-6 h-6 rounded-full text-xs flex items-center justify-center ${
+                  day.completed ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-700'
+                }`}
+              >
+                {day.day}
+              </span>
+            ))}
+          </div>
+        </div>
+        
+        {/* Day Selector */}
+        <div className="mb-6">
+          <label className="block mb-2 font-medium text-gray-700">Select Day</label>
+          <div className="flex items-center gap-4">
+            <select
+              value={selectedDay}
+              onChange={(e) => {
+                const day = parseInt(e.target.value);
+                setSelectedDay(day);
+                fetchCourseMaterials(selectedEnrollment.course._id, day);
+              }}
+              className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-deep-blue"
+            >
+              {Array.from({ length: 14 }, (_, i) => i + 1).map(day => (
+                <option key={day} value={day}>Day {day}</option>
+              ))}
+            </select>
+            <span className="text-sm text-gray-500">
+              {selectedEnrollment.completedDays?.find(d => d.day === selectedDay)?.completed 
+                ? "Completed" 
+                : "Not completed"}
+            </span>
+          </div>
+        </div>
+        
+        {materials.length > 0 ? (
+          <div>
+            <h3 className="mb-4 text-lg font-semibold text-deep-blue">Materials for Day {selectedDay}</h3>
+            <div className="space-y-4">
+              {materials[0]?.materials.map((material, idx) => (
+                <div key={idx} className="p-4 rounded-lg bg-blue-50">
+                  <h4 className="font-semibold text-deep-blue">{material.title}</h4>
+                  <p className="mb-3 text-sm text-gray-600">{material.description}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {material.materials.map((mat, matIdx) => (
+                      <a
+                        key={matIdx}
+                        href={mat.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center px-3 py-2 text-sm text-white bg-blue-500 rounded hover:bg-blue-600"
+                      >
+                        {mat.type === 'pdf' ? <FaFilePdf className="mr-2" /> : <FaLink className="mr-2" />}
+                        {mat.name}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="p-6 text-center text-gray-500">No materials available for Day {selectedDay}.</div>
+        )}
+        <div className="mt-6 text-right">
+          <button
+            onClick={() => setSelectedEnrollment(null)}
+            className="px-6 py-2 text-white rounded-lg bg-gradient-to-r from-deep-blue to-purple-blue hover:from-purple-blue hover:to-light-blue"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
