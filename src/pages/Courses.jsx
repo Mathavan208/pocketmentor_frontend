@@ -35,24 +35,39 @@ const Courses = () => {
   }, []);
 
   useEffect(() => {
-    if (!loading && !error) {
+  if (!loading && !error) {
+    gsap.fromTo(
+      sectionRef.current,
+      { opacity: 0, y: 30 },
+      { opacity: 1, y: 0, duration: 1, ease: 'power2.out' }
+    );
+
+    gsap.fromTo(
+      titleRef.current,
+      { opacity: 0, y: 20 },
+      { opacity: 1, y: 0, duration: 1, delay: 0.2, ease: 'power2.out' }
+    );
+
+    // Animate Available Courses grid only if it exists and has courses
+    if (availableCourses.length > 0 && availableGridRef.current) {
       gsap.fromTo(
-        sectionRef.current,
-        { opacity: 0, y: 30 },
-        { opacity: 1, y: 0, duration: 1, ease: 'power2.out' }
-      );
-      gsap.fromTo(
-        titleRef.current,
-        { opacity: 0, y: 20 },
-        { opacity: 1, y: 0, duration: 1, delay: 0.2, ease: 'power2.out' }
-      );
-      gsap.fromTo(
-        [availableGridRef.current, upcomingGridRef.current],
+        availableGridRef.current,
         { opacity: 0 },
-        { opacity: 1, duration: 1, delay: 0.4, stagger: 0.2, ease: 'power2.out' }
+        { opacity: 1, duration: 1, delay: 0.4, ease: 'power2.out' }
       );
     }
-  }, [loading, error, courses]);
+
+    // Animate Upcoming Courses grid only if it exists and has courses
+    if (upcomingCourses.length > 0 && upcomingGridRef.current) {
+      gsap.fromTo(
+        upcomingGridRef.current,
+        { opacity: 0 },
+        { opacity: 1, duration: 1, delay: 0.6, ease: 'power2.out' }
+      );
+    }
+  }
+}, [loading, error, courses]);
+
 
   const availableCourses = courses.filter(course => course.status === 'available');
   const upcomingCourses = courses.filter(course => course.status === 'upcoming');
@@ -109,7 +124,7 @@ const Courses = () => {
             </span>
           </div>
           
-          {availableCourses.length > 0 ? (
+          {availableCourses?.length > 0 ? (
             <div ref={availableGridRef} className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
               {availableCourses.map((course) => (
                 <CourseCard key={course._id} course={course} />
